@@ -53,3 +53,65 @@ must be given the SDK's compile flags or it is built with a different ABI than t
 application linking it. This was never verified on a real NCS toolchain — do that
 before the component goes into firmware. Header-only components are compiled as
 part of the application and have no such concern.
+
+## A second round: three components from a174-hardware
+
+September 2026, after the first eleven. These came from one project rather than from
+eight copies of the same file, so the reason to move them is different: each is logic
+four applications in a174-hardware already share, wrapped in Zephyr calls that had
+nothing to do with the logic.
+
+The cut is the same in all three — the platform stays in the project, the decision
+moves into the library:
+
+* **event-manager** (`firmware/common/event-manager`). `k_msgq` became the
+  `EventQueueLike` concept and the manager borrows a queue instead of owning one;
+  `k_uptime_get_32()` became the `nowMs` parameter of `Push()`; the two `LOG_WRN`
+  calls became callbacks. The a174 default payload — a `std::variant` of
+  `std::monostate`, `float` and `std::uint8_t` — was not carried over: it is that
+  project's domain choice, not a library default.
+* **settings-record** (`firmware/common/settings-storage`). Only the record format
+  came across. `NvsStorage` stayed behind with the flash device and the
+  `FIXED_PARTITION(settings_storage)` name it needs, and the component talks to
+  whatever satisfies `RecordStorageLike`.
+* **button-event** (`firmware/common/drivers/button-event`). The state machine came
+  across, and with it went `IGpioInputPin`, `k_work`, `k_work_delayable`,
+  `CONTAINER_OF`, `util::ZephyrTimer` and `k_uptime_get()`. The caller samples the pin
+  and acts on the `ButtonAction` the core returns.
+
+## Changed on the way in, second round
+
+* **`CalcCrc` was a fourth copy of CRC-32/ISO-HDLC.** Same `0xEDB88320`, same
+  initial and final XOR, a fifth of a page of hand-written loop inside
+  `settings-record.cpp`. It now calls `Integra::crc`. A test pins the result against
+  both the catalogue check value for `"123456789"` and the original's own loop,
+  because the wrong checksum here would not fail a build — it would quietly reject
+  every setting a device had already saved.
+* **A settings payload that is not trivially copyable is now a `static_assert`.**
+  The original compiled it and would have written a pointer to flash.
+* **The storage contract takes `std::span`** instead of `const void*` and a length,
+  so a call cannot pass a size that does not match the buffer. An existing
+  `NvsStorage` needs its two signatures widened; the bodies do not change.
+* **`ButtonEventController`'s two `std::atomic` flags became plain `bool`s.** They
+  advertised a thread safety the class never had — `m_pressTime` sat next to them as
+  a plain `int64_t` — and the real rule was always that the ISR-context edge and
+  timeout are deferred to a work queue. That rule is now written down as the core's
+  contract instead of being implied by two of five members.
+
+## Left behind on purpose, second round
+
+`NvsStorage` and the Zephyr adapters for the other two. A partition name, a flash
+device, a `k_msgq` and a `k_work` are the project's, and moving them would mean the
+library picking a platform.
+
+## Known and unverified, second round
+
+* `event-manager` and `button-event` hold their handlers in `std::function`, which
+  allocates for a large enough capture. Registration happens once at startup, but a
+  context that forbids the heap outright has to know.
+* `button-event`'s one-context rule is a contract, not a compiler error. a174-hardware
+  already honoured it; a new adapter that calls the core straight from an ISR would
+  compile.
+* Nothing here has run on a device yet. The three components are verified by their
+  own test suites on the host, under gcc and clang.
+
