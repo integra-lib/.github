@@ -104,6 +104,29 @@ moves into the library:
 device, a `k_msgq` and a `k_work` are the project's, and moving them would mean the
 library picking a platform.
 
+## And one more: hexstrconv, in two projects
+
+`hexstrconv` existed in a138-ble-gateway (`firmware/lib/utils`) and in scale
+(`components/utils`) with the same two functions drifted apart — the `function.hpp`
+story again. Each copy had caught a defect the other had not:
+
+* scale's `FromHexStr` accepted `"0x"` as a single zero byte. `std::from_chars`
+  reports success on a partial parse and neither copy checked that it had consumed
+  both characters; a138's copy only escaped it by pre-scanning with `isxdigit`.
+* that pre-scan passed a possibly negative `char` to `std::isxdigit`, which is
+  undefined for anything but `unsigned char` values and `EOF`. One byte above 0x7F in
+  the input is enough.
+
+Both are fixed in `hex-string`, and both are pinned by a test. The API changed to
+enter a library built for firmware: the `std::vector` and `std::string` returns became
+a caller's buffer and a written count, the three `throw`s became `std::optional`, and
+everything is `constexpr`. `ToHexStrInverted` became `BytesToHexReversed` — the a138
+copy carried a `// TODO: fix mac -> string presentation` beside it, and reversed byte
+order is the presentation a radio hands over, not a defect.
+
+Left behind: `FromStr2Bytes`, which converts characters to bytes and has nothing to do
+with hex, and `IntToHexStr`, which formats through `std::stringstream`.
+
 ## Known and unverified, second round
 
 * `event-manager` and `button-event` hold their handlers in `std::function`, which
@@ -112,6 +135,6 @@ library picking a platform.
 * `button-event`'s one-context rule is a contract, not a compiler error. a174-hardware
   already honoured it; a new adapter that calls the core straight from an ISR would
   compile.
-* Nothing here has run on a device yet. The three components are verified by their
+* Nothing here has run on a device yet. The four components are verified by their
   own test suites on the host, under gcc and clang.
 

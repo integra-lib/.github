@@ -17,6 +17,7 @@ h2. Обзор
 | dedup-cache | {{DedupCache<CAPACITY>}} | отсев повторов по идентификатору |
 | work-queue | {{IWorkQueue}} | интерфейс отложенного выполнения |
 | periodic-clock | {{IPeriodicClock}} | интерфейс монотонных часов и периодического тика |
+| hex-string | {{HexToBytes}}, {{BytesToHex}}, {{BytesToHexReversed}} | перевод hex-текста в байты и обратно без динамической памяти |
 | event-manager | {{EventManager<Payload, Queue>}} | публикация и подписка на события поверх очереди |
 | settings-record | {{WriteSettingsRecord}}, {{ReadSettingsRecord}} | настройки во флеше, которые читаются только если сошлась контрольная сумма |
 | button-event | {{ButtonEventCore}} | антидребезг кнопки и разбор нажатия на короткое и длинное |
@@ -158,6 +159,33 @@ h3. periodic-clock
 {code:language=cpp}
 #include <integra/periodic_clock.hpp>
 clock.StartTick(std::chrono::milliseconds{100}, [] { engine.OnTick(); });
+{code}
+
+h3. hex-string
+
+Перевод шестнадцатеричного текста в байты и обратно — в буфер вызывающего, без динамической памяти и без исключений, всё {{constexpr}}.
+
+{{BytesToHex}} пишет hex в нижнем регистре, по два символа на байт, ведущий ноль включён. {{BytesToHexReversed}} — то же, но начиная с младшего байта: так печатается MAC, который радио отдаёт в порядке передачи по эфиру, обратном порядку записи. {{HexToBytes}} разбирает строку обратно в байты.
+
+Обе стороны возвращают {{std::optional}} с числом записанных элементов. Нечётная длина, символ не из набора и не влезающий буфер — это значение, а не исключение: строка обычно пришла из канала, где «неправильная» — обычное дело, а библиотека собирается с выключенными исключениями. Пока не разобран весь вход, в буфер не пишется ничего, поэтому вызывающий, проигнорировавший результат, не увидит половину значения.
+
+{{HexCharCount(n)}} даёт нужный размер буфера под форматирование; массив на единицу больше, инициализированный нулями, заодно оказывается C-строкой.
+
+{code:language=cpp}
+#include <integra/hex_string.hpp>
+
+std::array<char, integra::HexCharCount(sizeof(mac)) + 1U> text{};
+if (integra::BytesToHexReversed(mac, text).has_value())
+{
+    LOG_INF("peer %s", text.data());
+}
+
+std::array<std::uint8_t, 6> parsed{};
+const auto count = integra::HexToBytes(text.data(), parsed);
+if (!count.has_value())
+{
+    return Reject();
+}
 {code}
 
 h3. event-manager
