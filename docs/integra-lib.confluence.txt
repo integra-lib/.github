@@ -1,0 +1,265 @@
+Библиотека общих компонентов, не зависящих от архитектуры. Заголовочная (кроме одного компонента), C++20, без исключений и RTTI.
+
+Каждый компонент — отдельный репозиторий со своей версией. Проект подключает сабмодулем только те, которыми пользуется, и обновляет их независимо друг от друга.
+
+Сейчас репозитории живут в организации [integra-lib на GitHub|https://github.com/integra-lib] как на временной площадке; планируется переезд в группу GitLab {{internal-projects/integra-lib}}. При переезде изменится только URL в {{.gitmodules}} потребителя.
+
+h2. Обзор
+
+|| Репозиторий || Что даёт || Когда нужен ||
+| ring-buffer | {{RingBuffer<T, SIZE>}} | очередь фиксированного размера без динамической памяти |
+| function | {{Function<R(Args...)>}} | хранение колбэка, когда {{std::function}} недоступен или избыточен |
+| bit-ops | {{AssembleBytes}}, {{GetByteByIndex}} | разбор и сборка целых из байтов при работе с протоколами |
+| enum-utils | {{EnumValue}} | перевод элемента перечисления в число |
+| const-map | {{ConstMap<Key, Value, SIZE>}} | небольшая таблица соответствий, известная на этапе компиляции |
+| ema-filter | {{EmaFilter}} | сглаживание показаний датчика |
+| crc | {{Crc8Nrsc5}}, {{Crc16Ccitt}}, {{Crc32IsoHdlc}}, {{Crc32Stream}} | контрольные суммы: датчики, протоколы, проверка образа прошивки |
+| dedup-cache | {{DedupCache<CAPACITY>}} | отсев повторов по идентификатору |
+| work-queue | {{IWorkQueue}} | интерфейс отложенного выполнения |
+| periodic-clock | {{IPeriodicClock}} | интерфейс монотонных часов и периодического тика |
+| transaction-engine | формат кадра, контракт канала, отправитель и приёмник | обмен командами с подтверждением поверх ненадёжного канала |
+
+{{transaction_engine}} поставляется одним неделимым компонентом: отправитель, приёмник и формат кадра осмысленны только в одной и той же версии друг друга, поэтому это одна цель с одним зонтичным заголовком.
+
+h2. Компоненты
+
+h3. ring-buffer
+
+{{integra::RingBuffer<T, SIZE>}} — кольцевой буфер фиксированного размера поверх {{std::array}}. Память не выделяет, размер задаётся шаблонным параметром. При заполнении новое значение отбрасывается. Методы: {{Push}}, {{Pop}}, {{Clear}}, {{IsEmpty}}.
+
+{code:language=cpp}
+#include <integra/ring_buffer.hpp>
+integra::RingBuffer<std::uint16_t, 32> samples;
+samples.Push(value);
+std::uint16_t out{};
+if (samples.Pop(out))
+{
+    Process(out);
+}
+{code}
+
+h3. function
+
+{{integra::Function<R(Args...)>}} — облегчённый аналог {{std::function}}: хранит любой вызываемый объект с заданной сигнатурой. Копирование запрещено, перемещение разрешено. Вызываемый объект размещается в куче, поэтому в контексте без динамической памяти компонент неприменим.
+
+{code:language=cpp}
+#include <integra/function.hpp>
+integra::Function<void(int)> handler = [](int code) { Handle(code); };
+handler(42);
+if (handler)
+{
+    // проверка на пустоту
+}
+{code}
+
+h3. bit-ops
+
+Сборка и разбор беззнаковых целых по байтам. Всё {{constexpr}}, вычисляется на этапе компиляции. Типы проверяются: только беззнаковые целые, число байтов не превышает размер результата.
+
+{code:language=cpp}
+#include <integra/bit_ops.hpp>
+// собрать целое из байтов, младший первым
+constexpr auto word = integra::AssembleBytes<std::uint16_t>(0x12U, 0x34U); // 0x3412
+// извлечь байт по индексу, 0 — младший
+constexpr auto lsb = integra::GetByteByIndex<0>(0xABCDU); // 0xCD
+{code}
+
+h3. enum-utils
+
+{{integra::EnumValue}} — преобразует элемент перечисления в его числовое значение, сохраняя базовый тип.
+
+{code:language=cpp}
+#include <integra/enum_utils.hpp>
+const auto raw = integra::EnumValue(Command::eReset);
+{code}
+
+h3. const-map
+
+{{integra::ConstMap<Key, Value, SIZE>}} — таблица «ключ — значение», задаваемая на этапе компиляции. Поиск линейный, поэтому компонент предназначен для небольших таблиц. Отсутствие ключа — не ошибка, а {{std::nullopt}}.
+
+{code:language=cpp}
+#include <integra/const_map.hpp>
+constexpr integra::ConstMap<Code, std::string_view, 3> NAMES{{{
+    {Code::eOk,      "ok"},
+    {Code::eTimeout, "timeout"},
+    {Code::eCrc,     "crc"},
+}}};
+if (const auto name = NAMES.Find(code); name.has_value())
+{
+    Print(name.value());
+}
+{code}
+
+h3. ema-filter
+
+{{integra::EmaFilter}} — экспоненциальное скользящее среднее. Первое измерение принимается без запаздывания: {{Update()}} сразу возвращает поданное значение, а не ползёт к нему от нуля. {{Reset()}} возвращает фильтр в это состояние.
+
+{code:language=cpp}
+#include <integra/ema_filter.hpp>
+integra::EmaFilter filter{0.25F};
+const float smoothed = filter.Update(rawVoltage);
+{code}
+
+h3. crc
+
+Три контрольные суммы, названные по каталогу алгоритмов, — чтобы из места вызова было видно, какой именно алгоритм используется, без чтения реализации. Побитовые, без таблиц: таблица во флеше ради суммы, считаемой один раз при загрузке, не окупается. Все три {{constexpr}}.
+
+* {{Crc8Nrsc5}} — полином 0x31, начальное значение 0xFF. Датчики Sensirion (SHT4x и родственные).
+* {{Crc16Ccitt}} — полином 0x1021, начальное значение 0xFFFF. Вариант CCITT-FALSE.
+* {{Crc32IsoHdlc}} — отражённый полином 0xEDB88320. Тот же, что в zlib, Ethernet и PNG.
+* {{Crc32Stream}} — инкрементальная форма CRC-32 для данных, приходящих частями: проверка образа прошивки постранично.
+
+{code:language=cpp}
+#include <integra/crc.hpp>
+const std::uint16_t frameCrc = integra::Crc16Ccitt(frameBytes);
+
+integra::Crc32Stream image;
+for (const auto& page : pages)
+{
+    image.Update(page);
+}
+const bool valid = image.Value() == expectedCrc;
+{code}
+
+h3. dedup-cache
+
+{{integra::DedupCache<CAPACITY>}} — кольцевой кеш последних увиденных идентификаторов фиксированной ёмкости. Память не выделяет; при переполнении вытесняется самый старый. Нужен там, где повтор сообщения надо отличить от нового.
+
+{code:language=cpp}
+#include <integra/dedup_cache.hpp>
+integra::DedupCache<16> seen;
+if (!seen.Contains(messageId))
+{
+    Handle(message);
+    seen.Insert(messageId);
+}
+{code}
+
+h3. work-queue
+
+{{integra::IWorkQueue}} — интерфейс отложенного выполнения: обработчик запускается позже, в том контексте, которым владеет реализация. Реализации платформенные и живут в проекте, библиотека даёт только контракт.
+
+{code:language=cpp}
+#include <integra/work_queue.hpp>
+void Setup(integra::IWorkQueue& queue)
+{
+    queue.SetHandler([] { DoDeferredWork(); });
+    queue.Submit();
+}
+{code}
+
+h3. periodic-clock
+
+{{integra::IPeriodicClock}} — интерфейс монотонных часов и периодического тика. Отделяет две единственные аппаратные зависимости адаптерного слоя, благодаря чему код над ним тестируется на хосте с подставной реализацией.
+
+{code:language=cpp}
+#include <integra/periodic_clock.hpp>
+clock.StartTick(std::chrono::milliseconds{100}, [] { engine.OnTick(); });
+{code}
+
+h3. transaction-engine
+
+Транзакционный протокол поверх ненадёжного канала: отправка с подтверждением, повторы с экспоненциальным backoff, дедупликация на приёме. Поставляется одним компонентом — части протокола версионируются вместе.
+
+{code:language=cpp}
+#include <integra/transaction_engine.hpp>
+{code}
+
+h4. Формат кадра
+
+{{integra::TransactionFrame}}: идентификатор транзакции, тип, метка времени, полезная нагрузка до 64 байт, контрольная сумма CRC-16/CCITT-FALSE из компонента {{crc}}. {{EncodeTransactionFrame}} возвращает число записанных байт либо 0, если нагрузка велика или буфер мал. {{DecodeTransactionFrame}} возвращает {{false}} при несовпадении суммы, обрезанном кадре или несогласованной длине.
+
+h4. Канал
+
+{{integra::ITransactionTransport}} — интерфейс, через который протокол отправляет и принимает сырые байты. Что под ним — Zigbee, BLE, UART — протокол не знает. Отправитель и приёмник регистрируют обработчики по отдельности, и каждый принятый кадр доставляется обоим: демультиплексирование не нужно, потому что каждая сторона игнорирует чужие кадры.
+
+h4. Отправитель
+
+{{integra::ReliableEventSenderCore<MAX_IN_FLIGHT>}} — назначает идентификатор транзакции, ждёт подтверждения, повторяет с экспоненциальным backoff, паркует отправку, пока канал недоступен, и сообщает об окончательной неудаче.
+
+Время передаётся снаружи параметром {{nowMs}}, а не читается внутри, поэтому машина состояний тестируется на хосте с поддельными часами. Число попыток включает первую отправку: при {{maxRetry = 4}} уходит ровно четыре кадра, а не пять.
+
+{code:language=cpp}
+integra::ReliableEventSenderCore<2> sender{deviceId, sendFn};
+sender.SetOnConfirmed([](std::uint32_t txnId) { MarkDone(txnId); });
+sender.SetOnFailed([](std::uint32_t txnId) { MarkFailed(txnId); });
+const auto txnId = sender.Submit(commandType, payload, nowMs);
+{code}
+
+h4. Приёмник
+
+{{integra::ReliableEventReceiverCore<DEDUP_CAPACITY>}} — проверяет кадр, отбрасывает повтор уже обработанной транзакции, передаёт новую в обработчик и всегда отвечает подтверждением с тем же идентификатором. Повтор подтверждается, но второй раз не обрабатывается: иначе потерянное подтверждение приводило бы к двойному выполнению команды.
+
+{code:language=cpp}
+integra::ReliableEventReceiverCore<16> receiver{handlerFn, sendAckFn};
+receiver.OnFrameReceived(rawBytes);
+{code}
+
+h2. Подключение к проекту
+
+h3. 1. Добавить нужные компоненты сабмодулями
+
+Подключается только то, чем пользуетесь: неиспользуемые компоненты не скачиваются вовсе.
+
+{code:language=bash}
+git submodule add git@github.com:integra-lib/crc.git external/integra/crc
+git commit -m "build: add integra-lib crc component"
+{code}
+
+h3. 2. Подключить в CMake
+
+{code:language=cmake}
+add_subdirectory(external/integra/crc)
+target_link_libraries(app PRIVATE Integra::crc)
+{code}
+
+Каждый компонент несёт свой каталог включений, поэтому заголовок недоступен, пока компонент не слинкован: забытая зависимость даёт ошибку компиляции, а не случайно работающую сборку.
+
+h3. 3. Включить заголовок
+
+{code:language=cpp}
+#include <integra/crc.hpp>
+{code}
+
+h3. Компонент с зависимостями
+
+Зависимости есть только у {{transaction-engine}}: ему нужны {{crc}}, {{bit-ops}} и {{dedup-cache}}. Они подключаются *рядом* с ним, а не внутрь него, — тогда в дереве проекта каждый компонент существует ровно в одном экземпляре и две разные версии одного компонента в одну прошивку попасть не могут.
+
+{code:language=cmake}
+add_subdirectory(external/integra/crc)
+add_subdirectory(external/integra/bit-ops)
+add_subdirectory(external/integra/dedup-cache)
+add_subdirectory(external/integra/transaction-engine)
+{code}
+
+Если компонента нет или его версия вне допустимого диапазона, CMake останавливается на configure с сообщением, в котором названы и компонент, и найденная версия:
+
+{noformat}
+transaction_engine needs Integra::crc >= 0.1.0 and < 0.2.0, found 0.2.0.
+{noformat}
+
+h3. Версии
+
+Каждый компонент выпускается независимо и помечается тегом {{vX.Y.Z}}. До версии 1.0 minor-релиз может ломать API — поэтому зависимые компоненты принимают ровно один minor.
+
+{code:language=bash}
+git -C external/integra/crc fetch --tags
+git -C external/integra/crc checkout v0.2.0
+git add external/integra/crc
+git commit -m "build: bump crc to v0.2.0"
+{code}
+
+Обновление версии — обычное изменение в истории проекта: видно в diff, проходит ревью, откатывается коммитом.
+
+h3. Что учесть в CI потребителя
+
+Компоненты — обычные сабмодули, поэтому сборочным job'ам нужен {{GIT_SUBMODULE_STRATEGY: normal}} (или {{recursive}}). Частая ошибка: переменная выставлена только у job'а с unit-тестами, а сборка прошивки падает на отсутствующем каталоге.
+
+h3. Требования
+
+* C++20
+* исключения и RTTI библиотека не использует и не требует
+* динамическая память нужна только компоненту {{function}}
+* {{transaction-engine}} — единственный компонент со своей единицей трансляции, то есть статическая библиотека. Под Zephyr такой библиотеке нужно передать флаги SDK, иначе она соберётся с другим ABI, чем приложение. Перед использованием в прошивке это надо проверить на реальном тулчейне; заголовочных компонентов это не касается — они компилируются в составе приложения.
+
+Собственные тесты компонентов собираются, только когда репозиторий компонента открыт как корневой проект. В сборке потребителя они не участвуют, GoogleTest не скачивается.
