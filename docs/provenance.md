@@ -127,6 +127,27 @@ order is the presentation a radio hands over, not a defect.
 Left behind: `FromStr2Bytes`, which converts characters to bytes and has nothing to do
 with hex, and `IntToHexStr`, which formats through `std::stringstream`.
 
+## And three more: worker, debouncer, mqtt-topic
+
+* **worker** is `BaseWorker` from a138-ble-gateway's `lib/shared-slip`, which the
+  ESP32 and nRF halves of that project each aliased with their own mutex.
+  `Post(const Work&& work)` copied every callable — `std::move` of a `const&&` is
+  still `const`, so the push picked the copy constructor — and the drain copied the
+  front of the queue before popping it; both now move. The `LockGuard` template
+  parameter gave way to a `lock()`/`unlock()` concept and `std::scoped_lock`, which
+  also retired the nRF worker's initialiser callback that threw from a constructor.
+  `GetInstance()` and the project's `IUpdateableObject` base stayed behind.
+* **debouncer** is `util::Debouncer` from a160-oto-screening's `lib/util`. The
+  counting is unchanged. `Compare(Comparer)` became `Update(bool)` — the callable was
+  invoked once, immediately — the conversion to `bool` became explicit, since the
+  implicit one let `int n = debouncer;` compile, and the header now includes the
+  `<algorithm>` and `<cstddef>` it used and had only been getting by include order.
+* **mqtt-topic** is `MatchTopic` from a138-ble-gateway's
+  `esp32/components/mqtt-helper`; the ESP-IDF client around it stayed in the project.
+  It was rewritten to walk levels, because it compared a `#` filter as a string
+  prefix — `sensors/#` matched `sensorsX/temp` — and missed the parent level after a
+  `+`, so `+/#` did not match `a`. All 32 `static_assert` cases it carried are kept.
+
 ## Known and unverified, second round
 
 * `event-manager` and `button-event` hold their handlers in `std::function`, which
@@ -135,6 +156,6 @@ with hex, and `IntToHexStr`, which formats through `std::stringstream`.
 * `button-event`'s one-context rule is a contract, not a compiler error. a174-hardware
   already honoured it; a new adapter that calls the core straight from an ISR would
   compile.
-* Nothing here has run on a device yet. The four components are verified by their
+* Nothing here has run on a device yet. The seven components are verified by their
   own test suites on the host, under gcc and clang.
 

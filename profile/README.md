@@ -31,6 +31,7 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 |---|---|---|
 | [ema-filter](https://github.com/integra-lib/ema-filter) | `EmaFilter` | smoothing a sensor reading |
 | [crc](https://github.com/integra-lib/crc) | `Crc8Nrsc5`, `Crc16Ccitt`, `Crc32IsoHdlc`, `Crc32Stream` | checksums: sensors, protocols, verifying a firmware image |
+| [debouncer](https://github.com/integra-lib/debouncer) | `Debouncer<INC, DEC>` | confirming a condition over several samples before acting on it |
 
 ### Execution
 
@@ -38,6 +39,7 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 |---|---|---|
 | [work-queue](https://github.com/integra-lib/work-queue) | `IWorkQueue` | an interface for deferred execution |
 | [periodic-clock](https://github.com/integra-lib/periodic-clock) | `IPeriodicClock` | an interface for a monotonic clock and a periodic tick |
+| [worker](https://github.com/integra-lib/worker) | `Worker<Mutex>` | posting work from any context and running it all on one |
 
 ### Events
 
@@ -57,6 +59,7 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 | Repository | Provides | Reach for it when |
 |---|---|---|
 | [transaction-engine](https://github.com/integra-lib/transaction-engine) | frame format, transport contract, sender and receiver | acknowledged command exchange over an unreliable link |
+| [mqtt-topic](https://github.com/integra-lib/mqtt-topic) | `MatchTopic` | routing an MQTT message to the subscription whose filter it matches |
 
 Shared tooling lives in [ci-shared](https://github.com/integra-lib/ci-shared) — the
 pipeline template and the style configs, used by the components and never by a
