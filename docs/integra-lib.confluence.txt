@@ -6,28 +6,56 @@
 
 h2. Обзор
 
+*Структуры данных* (Data Structures)
+
 || Репозиторий || Что даёт || Когда нужен ||
 | ring-buffer | {{RingBuffer<T, SIZE>}} | очередь фиксированного размера без динамической памяти |
+| const-map | {{ConstMap<Key, Value, SIZE>}} | небольшая таблица соответствий, известная на этапе компиляции |
+| dedup-cache | {{DedupCache<CAPACITY>}} | отсев повторов по идентификатору |
+
+*Утилиты* (Utilities)
+
+|| Репозиторий || Что даёт || Когда нужен ||
 | function | {{Function<R(Args...)>}} | хранение колбэка, когда {{std::function}} недоступен или избыточен |
 | bit-ops | {{AssembleBytes}}, {{GetByteByIndex}} | разбор и сборка целых из байтов при работе с протоколами |
 | enum-utils | {{EnumValue}} | перевод элемента перечисления в число |
-| const-map | {{ConstMap<Key, Value, SIZE>}} | небольшая таблица соответствий, известная на этапе компиляции |
+| hex-string | {{HexToBytes}}, {{BytesToHex}}, {{BytesToHexReversed}} | перевод hex-текста в байты и обратно без динамической памяти |
+
+*Алгоритмы* (Algorithms)
+
+|| Репозиторий || Что даёт || Когда нужен ||
 | ema-filter | {{EmaFilter}} | сглаживание показаний датчика |
 | crc | {{Crc8Nrsc5}}, {{Crc16Ccitt}}, {{Crc32IsoHdlc}}, {{Crc32Stream}} | контрольные суммы: датчики, протоколы, проверка образа прошивки |
-| dedup-cache | {{DedupCache<CAPACITY>}} | отсев повторов по идентификатору |
+
+*Исполнение* (Execution)
+
+|| Репозиторий || Что даёт || Когда нужен ||
 | work-queue | {{IWorkQueue}} | интерфейс отложенного выполнения |
 | periodic-clock | {{IPeriodicClock}} | интерфейс монотонных часов и периодического тика |
-| hex-string | {{HexToBytes}}, {{BytesToHex}}, {{BytesToHexReversed}} | перевод hex-текста в байты и обратно без динамической памяти |
+
+*События* (Events)
+
+|| Репозиторий || Что даёт || Когда нужен ||
 | event-manager | {{EventManager<Payload, Queue>}} | публикация и подписка на события поверх очереди |
-| settings-record | {{WriteSettingsRecord}}, {{ReadSettingsRecord}} | настройки во флеше, которые читаются только если сошлась контрольная сумма |
 | button-event | {{ButtonEventCore}} | антидребезг кнопки и разбор нажатия на короткое и длинное |
+
+*Хранение* (Persistence)
+
+|| Репозиторий || Что даёт || Когда нужен ||
+| settings-record | {{WriteSettingsRecord}}, {{ReadSettingsRecord}} | настройки во флеше, которые читаются только если сошлась контрольная сумма |
+
+*Связь* (Communication)
+
+|| Репозиторий || Что даёт || Когда нужен ||
 | transaction-engine | формат кадра, контракт канала, отправитель и приёмник | обмен командами с подтверждением поверх ненадёжного канала |
 
 {{transaction_engine}} поставляется одним неделимым компонентом: отправитель, приёмник и формат кадра осмысленны только в одной и той же версии друг друга, поэтому это одна цель с одним зонтичным заголовком.
 
 h2. Компоненты
 
-h3. ring-buffer
+h3. Структуры данных (Data Structures)
+
+h4. ring-buffer
 
 {{integra::RingBuffer<T, SIZE>}} — кольцевой буфер фиксированного размера поверх {{std::array}}. Память не выделяет, размер задаётся шаблонным параметром. При заполнении новое значение отбрасывается. Методы: {{Push}}, {{Pop}}, {{Clear}}, {{IsEmpty}}.
 
@@ -42,42 +70,7 @@ if (samples.Pop(out))
 }
 {code}
 
-h3. function
-
-{{integra::Function<R(Args...)>}} — облегчённый аналог {{std::function}}: хранит любой вызываемый объект с заданной сигнатурой. Копирование запрещено, перемещение разрешено. Вызываемый объект размещается в куче, поэтому в контексте без динамической памяти компонент неприменим.
-
-{code:language=cpp}
-#include <integra/function.hpp>
-integra::Function<void(int)> handler = [](int code) { Handle(code); };
-handler(42);
-if (handler)
-{
-    // проверка на пустоту
-}
-{code}
-
-h3. bit-ops
-
-Сборка и разбор беззнаковых целых по байтам. Всё {{constexpr}}, вычисляется на этапе компиляции. Типы проверяются: только беззнаковые целые, число байтов не превышает размер результата.
-
-{code:language=cpp}
-#include <integra/bit_ops.hpp>
-// собрать целое из байтов, младший первым
-constexpr auto word = integra::AssembleBytes<std::uint16_t>(0x12U, 0x34U); // 0x3412
-// извлечь байт по индексу, 0 — младший
-constexpr auto lsb = integra::GetByteByIndex<0>(0xABCDU); // 0xCD
-{code}
-
-h3. enum-utils
-
-{{integra::EnumValue}} — преобразует элемент перечисления в его числовое значение, сохраняя базовый тип.
-
-{code:language=cpp}
-#include <integra/enum_utils.hpp>
-const auto raw = integra::EnumValue(Command::eReset);
-{code}
-
-h3. const-map
+h4. const-map
 
 {{integra::ConstMap<Key, Value, SIZE>}} — таблица «ключ — значение», задаваемая на этапе компиляции. Поиск линейный, поэтому компонент предназначен для небольших таблиц. Отсутствие ключа — не ошибка, а {{std::nullopt}}.
 
@@ -94,38 +87,7 @@ if (const auto name = NAMES.Find(code); name.has_value())
 }
 {code}
 
-h3. ema-filter
-
-{{integra::EmaFilter}} — экспоненциальное скользящее среднее. Первое измерение принимается без запаздывания: {{Update()}} сразу возвращает поданное значение, а не ползёт к нему от нуля. {{Reset()}} возвращает фильтр в это состояние.
-
-{code:language=cpp}
-#include <integra/ema_filter.hpp>
-integra::EmaFilter filter{0.25F};
-const float smoothed = filter.Update(rawVoltage);
-{code}
-
-h3. crc
-
-Три контрольные суммы, названные по каталогу алгоритмов, — чтобы из места вызова было видно, какой именно алгоритм используется, без чтения реализации. Побитовые, без таблиц: таблица во флеше ради суммы, считаемой один раз при загрузке, не окупается. Все три {{constexpr}}.
-
-* {{Crc8Nrsc5}} — полином 0x31, начальное значение 0xFF. Датчики Sensirion (SHT4x и родственные).
-* {{Crc16Ccitt}} — полином 0x1021, начальное значение 0xFFFF. Вариант CCITT-FALSE.
-* {{Crc32IsoHdlc}} — отражённый полином 0xEDB88320. Тот же, что в zlib, Ethernet и PNG.
-* {{Crc32Stream}} — инкрементальная форма CRC-32 для данных, приходящих частями: проверка образа прошивки постранично.
-
-{code:language=cpp}
-#include <integra/crc.hpp>
-const std::uint16_t frameCrc = integra::Crc16Ccitt(frameBytes);
-
-integra::Crc32Stream image;
-for (const auto& page : pages)
-{
-    image.Update(page);
-}
-const bool valid = image.Value() == expectedCrc;
-{code}
-
-h3. dedup-cache
+h4. dedup-cache
 
 {{integra::DedupCache<CAPACITY>}} — кольцевой кеш последних увиденных идентификаторов фиксированной ёмкости. Память не выделяет; при переполнении вытесняется самый старый. Нужен там, где повтор сообщения надо отличить от нового.
 
@@ -139,29 +101,44 @@ if (!seen.Contains(messageId))
 }
 {code}
 
-h3. work-queue
+h3. Утилиты (Utilities)
 
-{{integra::IWorkQueue}} — интерфейс отложенного выполнения: обработчик запускается позже, в том контексте, которым владеет реализация. Реализации платформенные и живут в проекте, библиотека даёт только контракт.
+h4. function
+
+{{integra::Function<R(Args...)>}} — облегчённый аналог {{std::function}}: хранит любой вызываемый объект с заданной сигнатурой. Копирование запрещено, перемещение разрешено. Вызываемый объект размещается в куче, поэтому в контексте без динамической памяти компонент неприменим.
 
 {code:language=cpp}
-#include <integra/work_queue.hpp>
-void Setup(integra::IWorkQueue& queue)
+#include <integra/function.hpp>
+integra::Function<void(int)> handler = [](int code) { Handle(code); };
+handler(42);
+if (handler)
 {
-    queue.SetHandler([] { DoDeferredWork(); });
-    queue.Submit();
+    // проверка на пустоту
 }
 {code}
 
-h3. periodic-clock
+h4. bit-ops
 
-{{integra::IPeriodicClock}} — интерфейс монотонных часов и периодического тика. Отделяет две единственные аппаратные зависимости адаптерного слоя, благодаря чему код над ним тестируется на хосте с подставной реализацией.
+Сборка и разбор беззнаковых целых по байтам. Всё {{constexpr}}, вычисляется на этапе компиляции. Типы проверяются: только беззнаковые целые, число байтов не превышает размер результата.
 
 {code:language=cpp}
-#include <integra/periodic_clock.hpp>
-clock.StartTick(std::chrono::milliseconds{100}, [] { engine.OnTick(); });
+#include <integra/bit_ops.hpp>
+// собрать целое из байтов, младший первым
+constexpr auto word = integra::AssembleBytes<std::uint16_t>(0x12U, 0x34U); // 0x3412
+// извлечь байт по индексу, 0 — младший
+constexpr auto lsb = integra::GetByteByIndex<0>(0xABCDU); // 0xCD
 {code}
 
-h3. hex-string
+h4. enum-utils
+
+{{integra::EnumValue}} — преобразует элемент перечисления в его числовое значение, сохраняя базовый тип.
+
+{code:language=cpp}
+#include <integra/enum_utils.hpp>
+const auto raw = integra::EnumValue(Command::eReset);
+{code}
+
+h4. hex-string
 
 Перевод шестнадцатеричного текста в байты и обратно — в буфер вызывающего, без динамической памяти и без исключений, всё {{constexpr}}.
 
@@ -188,7 +165,66 @@ if (!count.has_value())
 }
 {code}
 
-h3. event-manager
+h3. Алгоритмы (Algorithms)
+
+h4. ema-filter
+
+{{integra::EmaFilter}} — экспоненциальное скользящее среднее. Первое измерение принимается без запаздывания: {{Update()}} сразу возвращает поданное значение, а не ползёт к нему от нуля. {{Reset()}} возвращает фильтр в это состояние.
+
+{code:language=cpp}
+#include <integra/ema_filter.hpp>
+integra::EmaFilter filter{0.25F};
+const float smoothed = filter.Update(rawVoltage);
+{code}
+
+h4. crc
+
+Три контрольные суммы, названные по каталогу алгоритмов, — чтобы из места вызова было видно, какой именно алгоритм используется, без чтения реализации. Побитовые, без таблиц: таблица во флеше ради суммы, считаемой один раз при загрузке, не окупается. Все три {{constexpr}}.
+
+* {{Crc8Nrsc5}} — полином 0x31, начальное значение 0xFF. Датчики Sensirion (SHT4x и родственные).
+* {{Crc16Ccitt}} — полином 0x1021, начальное значение 0xFFFF. Вариант CCITT-FALSE.
+* {{Crc32IsoHdlc}} — отражённый полином 0xEDB88320. Тот же, что в zlib, Ethernet и PNG.
+* {{Crc32Stream}} — инкрементальная форма CRC-32 для данных, приходящих частями: проверка образа прошивки постранично.
+
+{code:language=cpp}
+#include <integra/crc.hpp>
+const std::uint16_t frameCrc = integra::Crc16Ccitt(frameBytes);
+
+integra::Crc32Stream image;
+for (const auto& page : pages)
+{
+    image.Update(page);
+}
+const bool valid = image.Value() == expectedCrc;
+{code}
+
+h3. Исполнение (Execution)
+
+h4. work-queue
+
+{{integra::IWorkQueue}} — интерфейс отложенного выполнения: обработчик запускается позже, в том контексте, которым владеет реализация. Реализации платформенные и живут в проекте, библиотека даёт только контракт.
+
+{code:language=cpp}
+#include <integra/work_queue.hpp>
+void Setup(integra::IWorkQueue& queue)
+{
+    queue.SetHandler([] { DoDeferredWork(); });
+    queue.Submit();
+}
+{code}
+
+h4. periodic-clock
+
+{{integra::IPeriodicClock}} — интерфейс монотонных часов и периодического тика. Отделяет две единственные аппаратные зависимости адаптерного слоя, благодаря чему код над ним тестируется на хосте с подставной реализацией.
+
+{code:language=cpp}
+#include <integra/periodic_clock.hpp>
+clock.StartTick(std::chrono::milliseconds{100}, [] { engine.OnTick(); });
+{code}
+
+h3. События (Events)
+
+h4. event-manager
 
 {{integra::EventManager<Payload, Queue, MaxSubscriptions>}} — публикация и подписка поверх очереди. Обработчики регистрируются по идентификатору события, доставка идёт в том контексте, который вызвал {{Dispatch()}} (блокирующий) или {{TryDispatch()}} (неблокирующий, для потребителей со своим циклом).
 
@@ -211,7 +247,30 @@ std::ignore = events.Push(AppEvent::eTick, payload, k_uptime_get_32());
 while (events.TryDispatch()) {}
 {code}
 
-h3. settings-record
+h4. button-event
+
+{{integra::ButtonEventCore}} — антидребезг одной кнопки и разбор нажатия: короткое, длинное или слишком короткое, чтобы что-то значить. Пин, таймеры и часы снаружи: ядро получает фронт с пина, уровень, снятый после выдержки, и срабатывание длинного таймаута, а возвращает {{ButtonAction}} — что сделать с таймерами. Возврат помечен {{[[nodiscard]]}}: проигнорированный {{ButtonAction}} — это незаведённый таймер, то есть кнопка, которая молчит.
+
+Три времени задают смысл нажатия. Фронт опрашивается один раз, после {{confirmMs}} тишины на линии. Подтверждённое нажатие короче {{minPressMs}} — это касание, а не решение, и оно не сообщается вовсе. Нажатие, всё ещё удерживаемое через {{longPressMs}}, — длинное, и на отпускании оно не сообщается ещё раз как короткое: одно нажатие — одно решение. Без колбэка длинного нажатия таймер не заводится совсем.
+
+Все три входа должны вызываться из одного контекста. На устройстве и фронт с пина, и длинный таймаут приходят в прерывании, поэтому адаптер откладывает их в очередь работ, а не зовёт напрямую, — именно это позволяет держать состояние обычными {{bool}} и делать в колбэках настоящую работу.
+
+{code:language=cpp}
+#include <integra/button_event.hpp>
+
+integra::ButtonEventCore button{ { .confirmMs = 20, .minPressMs = 200, .longPressMs = 1000 } };
+button.SetOnShortPress([] { ToggleView(); });
+button.SetOnLongPress([] { EnterService(); });
+
+// в адаптере проекта:
+Apply(button.OnEdge());                             // из ISR — только перезапуск выдержки
+Apply(button.OnConfirmed(pin.Get(), k_uptime_get())); // из очереди работ
+Apply(button.OnLongPressElapsed(pin.Get()));          // из очереди работ
+{code}
+
+h3. Хранение (Persistence)
+
+h4. settings-record
 
 Запись настроек с контрольной суммой: {{WriteSettingsRecord}} кладёт в хранилище payload вместе с CRC-32, {{ReadSettingsRecord}} отдаёт его обратно, только если сумма сошлась, и не трогает переданную переменную, если нет, — значение по умолчанию переживает и первую загрузку, и испорченную ячейку.
 
@@ -241,28 +300,9 @@ Calibration calibration{ DEFAULT_CALIBRATION };
 std::ignore = integra::ReadSettingsRecord(storage, CALIBRATION_ID, calibration);
 {code}
 
-h3. button-event
+h3. Связь (Communication)
 
-{{integra::ButtonEventCore}} — антидребезг одной кнопки и разбор нажатия: короткое, длинное или слишком короткое, чтобы что-то значить. Пин, таймеры и часы снаружи: ядро получает фронт с пина, уровень, снятый после выдержки, и срабатывание длинного таймаута, а возвращает {{ButtonAction}} — что сделать с таймерами. Возврат помечен {{[[nodiscard]]}}: проигнорированный {{ButtonAction}} — это незаведённый таймер, то есть кнопка, которая молчит.
-
-Три времени задают смысл нажатия. Фронт опрашивается один раз, после {{confirmMs}} тишины на линии. Подтверждённое нажатие короче {{minPressMs}} — это касание, а не решение, и оно не сообщается вовсе. Нажатие, всё ещё удерживаемое через {{longPressMs}}, — длинное, и на отпускании оно не сообщается ещё раз как короткое: одно нажатие — одно решение. Без колбэка длинного нажатия таймер не заводится совсем.
-
-Все три входа должны вызываться из одного контекста. На устройстве и фронт с пина, и длинный таймаут приходят в прерывании, поэтому адаптер откладывает их в очередь работ, а не зовёт напрямую, — именно это позволяет держать состояние обычными {{bool}} и делать в колбэках настоящую работу.
-
-{code:language=cpp}
-#include <integra/button_event.hpp>
-
-integra::ButtonEventCore button{ { .confirmMs = 20, .minPressMs = 200, .longPressMs = 1000 } };
-button.SetOnShortPress([] { ToggleView(); });
-button.SetOnLongPress([] { EnterService(); });
-
-// в адаптере проекта:
-Apply(button.OnEdge());                             // из ISR — только перезапуск выдержки
-Apply(button.OnConfirmed(pin.Get(), k_uptime_get())); // из очереди работ
-Apply(button.OnLongPressElapsed(pin.Get()));          // из очереди работ
-{code}
-
-h3. transaction-engine
+h4. transaction-engine
 
 Транзакционный протокол поверх ненадёжного канала: отправка с подтверждением, повторы с экспоненциальным backoff, дедупликация на приёме. Поставляется одним компонентом — части протокола версионируются вместе.
 
@@ -270,15 +310,15 @@ h3. transaction-engine
 #include <integra/transaction_engine.hpp>
 {code}
 
-h4. Формат кадра
+h5. Формат кадра
 
 {{integra::TransactionFrame}}: идентификатор транзакции, тип, метка времени, полезная нагрузка до 64 байт, контрольная сумма CRC-16/CCITT-FALSE из компонента {{crc}}. {{EncodeTransactionFrame}} возвращает число записанных байт либо 0, если нагрузка велика или буфер мал. {{DecodeTransactionFrame}} возвращает {{false}} при несовпадении суммы, обрезанном кадре или несогласованной длине.
 
-h4. Канал
+h5. Канал
 
 {{integra::ITransactionTransport}} — интерфейс, через который протокол отправляет и принимает сырые байты. Что под ним — Zigbee, BLE, UART — протокол не знает. Отправитель и приёмник регистрируют обработчики по отдельности, и каждый принятый кадр доставляется обоим: демультиплексирование не нужно, потому что каждая сторона игнорирует чужие кадры.
 
-h4. Отправитель
+h5. Отправитель
 
 {{integra::ReliableEventSenderCore<MAX_IN_FLIGHT>}} — назначает идентификатор транзакции, ждёт подтверждения, повторяет с экспоненциальным backoff, паркует отправку, пока канал недоступен, и сообщает об окончательной неудаче.
 
@@ -291,7 +331,7 @@ sender.SetOnFailed([](std::uint32_t txnId) { MarkFailed(txnId); });
 const auto txnId = sender.Submit(commandType, payload, nowMs);
 {code}
 
-h4. Приёмник
+h5. Приёмник
 
 {{integra::ReliableEventReceiverCore<DEDUP_CAPACITY>}} — проверяет кадр, отбрасывает повтор уже обработанной транзакции, передаёт новую в обработчик и всегда отвечает подтверждением с тем же идентификатором. Повтор подтверждается, но второй раз не обрабатывается: иначе потерянное подтверждение приводило бы к двойному выполнению команды.
 
