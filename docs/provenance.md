@@ -148,6 +148,26 @@ with hex, and `IntToHexStr`, which formats through `std::stringstream`.
   prefix — `sensors/#` matched `sensorsX/temp` — and missed the parent level after a
   `+`, so `+/#` did not match `a`. All 32 `static_assert` cases it carried are kept.
 
+## And filters, from four projects
+
+`filters` gathers what a138-ble-sensors (`MedianFilter`, `HysteresisFilter`),
+a163-cgm-firmware (`MedianFilter`) and a139-bms48v-firmware (`sma`) each wrote for
+themselves. Every copy had a defect, all four confirmed by running the original:
+
+* a138's median computed an even result as `(a + b) / 2` in the sample type — four
+  `std::uint32_t` samples of 4 000 000 000 gave 1 852 516 352;
+* a163's median reset its counter in `SetWindowSize` but not its "ready" flag, so a
+  full filter reconfigured over the air answered from the old samples and ignored the
+  new ones;
+* a138's hysteresis guarded the unsigned step down with `boundary >= band`, which also
+  froze a signed filter in its upper state once a threshold was at or below the band;
+* a139's average kept its sum in the sample type — four `std::uint8_t` of 200 averaged
+  to 8 — and divided by the window from the first sample.
+
+Left behind: `IFilter`, which nothing used polymorphically; a139's `cma`, `wma` and
+`ema`, which only its own tests used; and a021-smart-helmet's integer
+`ExponentFilterFast`, which belongs next to ema-filter rather than here.
+
 ## Known and unverified, second round
 
 * `event-manager` and `button-event` hold their handlers in `std::function`, which
@@ -156,6 +176,6 @@ with hex, and `IntToHexStr`, which formats through `std::stringstream`.
 * `button-event`'s one-context rule is a contract, not a compiler error. a174-hardware
   already honoured it; a new adapter that calls the core straight from an ISR would
   compile.
-* Nothing here has run on a device yet. The seven components are verified by their
+* Nothing here has run on a device yet. The eight components are verified by their
   own test suites on the host, under gcc and clang.
 

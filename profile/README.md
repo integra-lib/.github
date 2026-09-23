@@ -32,6 +32,7 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 | [ema-filter](https://github.com/integra-lib/ema-filter) | `EmaFilter` | smoothing a sensor reading |
 | [crc](https://github.com/integra-lib/crc) | `Crc8Nrsc5`, `Crc16Ccitt`, `Crc32IsoHdlc`, `Crc32Stream` | checksums: sensors, protocols, verifying a firmware image |
 | [debouncer](https://github.com/integra-lib/debouncer) | `Debouncer<INC, DEC>` | confirming a condition over several samples before acting on it |
+| [filters](https://github.com/integra-lib/filters) | `MedianFilter`, `HysteresisFilter`, `MovingAverage` | cleaning up a sensor reading: spikes, chatter at a threshold, noise |
 
 ### Execution
 

@@ -19,6 +19,7 @@ h2. Обзор
 | *Алгоритмы* (Algorithms) | ema-filter | nRF52840 | {{EmaFilter}} {expand:title=Подробнее}*Когда нужен:* сглаживание показаний датчика \\ *Проекты:* a174-hardware (nRF52840){expand} |
 |   | crc | GD32F470, GD32F407, nRF52840, ESP32-S3, PIC32MX | {{Crc8Nrsc5}}, {{Crc16Ccitt}}, {{Crc32IsoHdlc}}, {{Crc32Stream}} {expand:title=Подробнее}*Когда нужен:* контрольные суммы: датчики, протоколы, проверка образа прошивки \\ *CRC-32, тот же полином {{0xEDB88320}}:* a000-bootloader (GD32F470), a000-firmware-update-over-modbus (GD32F470), a146-control-board (GD32F470), a151-sib-bathtub-controller (GD32F407), a160-oto-screening (GD32F470), a168-waveform-generator (nRF52840), a174-hardware (nRF52840) \\ *CRC-16, тот же полином {{0x1021}}:* a138-ble-gateway (ESP32-S3, nRF52840), a159-bpu-firmware (PIC32MX), a174-hardware (nRF52840) \\ *CRC-8 Sensirion (SHT40):* a138-ble-gateway (ESP32-S3), a138-ble-sensors (nRF52840){expand} |
 |   | debouncer | GD32F470 | {{Debouncer<INC, DEC>}} {expand:title=Подробнее}*Когда нужен:* подтверждение условия по нескольким отсчётам, прежде чем на него реагировать \\ *Проекты:* a160-oto-screening (GD32F470){expand} |
+|   | filters | nRF52840, nRF52832 | {{MedianFilter}}, {{HysteresisFilter}}, {{MovingAverage}} {expand:title=Подробнее}*Когда нужен:* очистка показаний датчика: медиана — против выбросов, гистерезис — против дребезга на порогах, скользящее среднее — против постоянного шума \\ *Проекты:* a138-ble-sensors (nRF52840), a163-cgm-firmware (nRF52832), a139-bms48v-firmware (nRF52840){expand} |
 | *Исполнение* (Execution) | work-queue | nRF52840 | {{IWorkQueue}} {expand:title=Подробнее}*Когда нужен:* интерфейс отложенного выполнения \\ *Проекты:* a138-ble-sensors (nRF52840), a174-hardware (nRF52840){expand} |
 |   | periodic-clock | nRF52840 | {{IPeriodicClock}} {expand:title=Подробнее}*Когда нужен:* интерфейс монотонных часов и периодического тика \\ *Проекты:* a174-hardware (nRF52840){expand} |
 |   | worker | nRF52840, ESP32-S3 | {{Worker<Mutex>}} {expand:title=Подробнее}*Когда нужен:* отложенная работа: поставить из любого контекста, выполнить всё в одном \\ *Проекты:* a138-ble-gateway (ESP32-S3, nRF52840){expand} |
@@ -192,6 +193,28 @@ integra::Debouncer<> overLimit{ 5U };   // пять превышений под�
 if (overLimit.Update(reading > LIMIT))
 {
     RaiseAlarm();
+}
+{code}
+
+h4. filters
+
+Три фильтра для показаний датчиков. Память фиксированная, без выделения, без исключений, всё {{constexpr}}; каждый возвращает {{std::optional}} — до первого отсчёта «ничего», а не ноль, похожий на измерение.
+
+* {{MedianFilter<T, CAPACITY>}} — скользящая медиана. Для показания, которое в основном верное и изредка дико неверное: один выброс в окне не сдвигает результат вовсе. Работает и скользящим окном, и пачками ({{IsFull()}}, прочитать, {{Clear()}}); окно можно сузить на ходу через {{SetWindow()}}, и тогда фильтр начинает заново. При чётном числе отсчётов результат — середина двух средних через {{std::midpoint}}, без переполнения у границы типа.
+* {{HysteresisFilter<T, N>}} — триггер Шмитта на N порогах. Для показания, которое определяет состояние: колебания у порога не переключают его на каждом отсчёте. Внутри состояния значение отслеживается свободно; переход засчитывается, только когда отсчёт ушёл за ближайший порог дальше полосы.
+* {{MovingAverage<T, N>}} — скользящее среднее. Сумма целых хранится в 64 битах, сумма с плавающей точкой пересчитывается из окна раз за круг, а пока окно не заполнено, среднее берётся по уже полученным отсчётам.
+
+{code:language=cpp}
+#include <integra/filters.hpp>
+
+integra::MedianFilter<std::uint32_t, 15> voltage{ 5U };
+integra::HysteresisFilter status{ std::array{ LOW_MV, STANDBY_MV, GOOD_MV }, BAND_MV };
+integra::MovingAverage<float, 4> current;
+
+voltage.Push(sample);
+if (const auto mv = voltage.Value(); mv.has_value())
+{
+    status.Push(mv.value());
 }
 {code}
 
