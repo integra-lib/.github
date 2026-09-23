@@ -54,6 +54,7 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 | Repository | Provides | Reach for it when |
 |---|---|---|
 | [settings-record](https://github.com/integra-lib/settings-record) | `WriteSettingsRecord`, `ReadSettingsRecord` | settings in flash that read back only if they verify |
+| [littlefs-cpp](https://github.com/integra-lib/littlefs-cpp) | `Littlefs<Device>`, `Littlefs::File` | a filesystem on flash through littlefs, without allocating |
 
 ### Communication
 
@@ -85,8 +86,9 @@ Each component carries its own include directory, so a header stays unreachable
 until its component is linked: a forgotten dependency is a compile error rather
 than a build that happens to work.
 
-Two components have dependencies: `transaction-engine` needs `crc`, `bit-ops` and
-`dedup-cache`, and `settings-record` needs `crc`. They are added next to the component
+Three components have dependencies: `transaction-engine` needs `crc`, `bit-ops` and
+`dedup-cache`, `settings-record` needs `crc`, and `littlefs-cpp` needs littlefs itself,
+a third-party library the project provides a CMake target for. They are added next to the component
 that needs them rather than inside it, so a project can never end up with two copies
 of the same component. A missing or out-of-range dependency stops the CMake configure
 with a message naming the version found.

@@ -26,6 +26,7 @@ h2. Обзор
 | *События* (Events) | event-manager | nRF52840 | {{EventManager<Payload, Queue>}} {expand:title=Подробнее}*Когда нужен:* публикация и подписка на события поверх очереди \\ *Проекты:* a174-hardware (nRF52840){expand} |
 |   | button-event | nRF52840 | {{ButtonEventCore}} {expand:title=Подробнее}*Когда нужен:* антидребезг кнопки и разбор нажатия на короткое и длинное \\ *Проекты:* a174-hardware (nRF52840){expand} |
 | *Хранение* (Persistence) | settings-record | nRF52840 | {{WriteSettingsRecord}}, {{ReadSettingsRecord}} {expand:title=Подробнее}*Когда нужен:* настройки во флеше, которые читаются только если сошлась контрольная сумма \\ *Проекты:* a174-hardware (nRF52840){expand} |
+|   | littlefs-cpp | nRF52832 | {{Littlefs<Device>}}, {{Littlefs::File}} {expand:title=Подробнее}*Когда нужен:* файловая система на флеше через littlefs — без выделения памяти, с файлом, который закрывается сам \\ *Проекты:* a163-cgm-firmware (nRF52832){expand} |
 | *Связь* (Communication) | transaction-engine | nRF52840 | формат кадра, контракт канала, отправитель и приёмник {expand:title=Подробнее}*Когда нужен:* обмен командами с подтверждением поверх ненадёжного канала \\ *Проекты:* a174-hardware (nRF52840){expand} |
 |   | mqtt-topic | ESP32, ESP32-S2, ESP32-S3 | {{MatchTopic}} {expand:title=Подробнее}*Когда нужен:* маршрутизация MQTT-сообщения к подписке, чей фильтр ему соответствует \\ *Проекты:* a084_one-home_pde37 (ESP32-S2), a138-ble-gateway (ESP32-S3), scale (ESP32){expand} |
 
@@ -338,6 +339,32 @@ Calibration calibration{ DEFAULT_CALIBRATION };
 std::ignore = integra::ReadSettingsRecord(storage, CALIBRATION_ID, calibration);
 {code}
 
+h4. littlefs-cpp
+
+Обёртка над littlefs: файловая система поверх любого блочного устройства с {{Read}}/{{Write}}/{{Erase}} (и {{Sync}}, если он есть), все буферы внутри объекта, файл, который закрывается сам. Сама littlefs в компонент не входит: её цель CMake даёт проект, имя задаётся {{INTEGRA_LITTLEFS_TARGET}}. Проверено на littlefs v2.10.1.
+
+* Монтирование ничего не стирает по своей инициативе. {{Mount()}} только монтирует; {{MountOrFormat()}} форматирует лишь при {{LFS_ERR_CORRUPT}} — так littlefs отвечает на чистую флеш при первом запуске. Любая другая ошибка, в том числе ошибка ввода-вывода, возвращается, и данные остаются на месте.
+* Память не выделяется: буферы файловой системы — её члены, файл несёт свой кеш и открывается через {{lfs_file_opencfg}}. Компонент собирается и тестируется с {{LFS_NO_MALLOC}}.
+* Файл нельзя ни скопировать, ни переместить: littlefs хранит указатель на каждый открытый файл. Закрывается в деструкторе; повторное закрытие — ошибка, а не второе закрытие.
+* Пути копируются в буфер с завершающим нулём: {{std::string_view}} не обязан быть завершён нулём, а littlefs принимает C-строки.
+* {{ForEach}} закрывает каталог на любом выходе, {{FileCount}} построен на нём.
+
+{code:language=cpp}
+#include <integra/littlefs.hpp>
+
+integra::Littlefs<Flash> fs{ flash, { .blockSize = 4096U, .blockCount = 32U } };
+if (const int err = fs.MountOrFormat(); err != LFS_ERR_OK)
+{
+    LOG_ERR("filesystem: %s", integra::LittlefsErrorName(err).data());
+}
+
+integra::Littlefs<Flash>::File file{ fs };
+if (file.Open("/ring/0001", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) == LFS_ERR_OK)
+{
+    std::ignore = file.Write(record);
+}   // закрыт — и записан — здесь
+{code}
+
 h3. Связь (Communication)
 
 h4. transaction-engine
@@ -426,7 +453,7 @@ h3. 3. Включить заголовок
 
 h3. Компонент с зависимостями
 
-Зависимости есть у двух компонентов: {{transaction-engine}} нужны {{crc}}, {{bit-ops}} и {{dedup-cache}}, а {{settings-record}} — {{crc}}. Они подключаются *рядом* с зависимым компонентом, а не внутрь него, — тогда в дереве проекта каждый компонент существует ровно в одном экземпляре и две разные версии одного компонента в одну прошивку попасть не могут.
+Зависимости есть у трёх компонентов: {{transaction-engine}} нужны {{crc}}, {{bit-ops}} и {{dedup-cache}}, {{settings-record}} — {{crc}}, а {{littlefs-cpp}} — сама littlefs, сторонняя библиотека, цель CMake для которой даёт проект. Они подключаются *рядом* с зависимым компонентом, а не внутрь него, — тогда в дереве проекта каждый компонент существует ровно в одном экземпляре и две разные версии одного компонента в одну прошивку попасть не могут.
 
 {code:language=cmake}
 add_subdirectory(external/integra/crc)

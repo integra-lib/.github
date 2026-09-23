@@ -168,6 +168,26 @@ Left behind: `IFilter`, which nothing used polymorphically; a139's `cma`, `wma` 
 `ema`, which only its own tests used; and a021-smart-helmet's integer
 `ExponentFilterFast`, which belongs next to ema-filter rather than here.
 
+## And littlefs-cpp, from a163-cgm-firmware
+
+The wrapper is a163's `utils::Lfs`, `LfsFile`, `ScopedLfsFile` and `LittlefsIterator`.
+Four defects, each confirmed by running it against littlefs v2.10.1 on a RAM block
+device:
+
+* it formatted on any mount failure — one transient read error at boot erased every
+  file;
+* `FileCount` left its directory on littlefs's open list with the `lfs_dir_t` on a
+  finished stack frame, which the next file open read (AddressSanitizer:
+  stack-use-after-return);
+* a moved `ScopedLfsFile` kept believing it was open and closed a null handle,
+  stopped by littlefs's own assertion — a null dereference under `LFS_NO_ASSERT`,
+  which a163's release build sets;
+* `LfsFile` passed a `std::string_view` to littlefs as a C string, so `"/a"` taken
+  out of `"/ab"` opened `"/ab"`.
+
+Not carried over: the `LFS_THREADSAFE` locking, never enabled and one static mutex
+for every filesystem; and `lfs_api.hpp`, a163's ring-of-files layer on top.
+
 ## Known and unverified, second round
 
 * `event-manager` and `button-event` hold their handlers in `std::function`, which
@@ -176,6 +196,6 @@ Left behind: `IFilter`, which nothing used polymorphically; a139's `cma`, `wma` 
 * `button-event`'s one-context rule is a contract, not a compiler error. a174-hardware
   already honoured it; a new adapter that calls the core straight from an ISR would
   compile.
-* Nothing here has run on a device yet. The eight components are verified by their
+* Nothing here has run on a device yet. The nine components are verified by their
   own test suites on the host, under gcc and clang.
 
