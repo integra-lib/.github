@@ -211,3 +211,37 @@ code in a169 and a130. It provides endian-aware `Store` and `Load` functions and
 `ByteReader` that borrows its input and keeps a sticky failure state. Array reads are
 all-or-nothing. Shifts happen in an unsigned type matching the encoded width, avoiding
 the signed integer-promotion undefined behavior in the original code.
+
+## And boot-slots, from a184-480w-ups-controller
+
+`boot-slots` is the bootloader logic of a184 (commit `a444a5e`):
+`Modules/Bootloader_Logic`, the transitions of `Modules/Firmware_Manager_Update`,
+and the metadata journal and image check of `Modules/Firmware_Manager`. a184 is a C
+project under MISRA C:2012, so the component stayed C (C11, builds as C99 too) —
+the only one in hwlib — with every hardware access moved behind a callback: flash,
+slot reads, the CRC unit, the device-family rule, the watchdog feed.
+
+The journal record and the image header are byte for byte a184's and
+`tools/build_firmware.py`'s; the tests pin both against bytes generated with
+Python's `zlib.crc32`. Changed on the way:
+
+* **A read error could erase the journal.** a184's scan treated an unreadable
+  sector like an empty one, and a save with "no free record" reclaims by erasing.
+  `hwlib_boot_journal_save()` now fails instead.
+* **Loading could not tell a first boot from a lost state.** a184's load returned
+  `false` for an erased sector, a read error and a sector with no intact record
+  alike, and the bootloader started from the factory state in every case.
+  `hwlib_boot_journal_load()` returns which one it was; a read error is no longer a
+  first boot. Found by an external review.
+* **The write buffer left the commit bytes uninitialised** in the first C port; a
+  mutation test that wrote the whole record at once exposed it. The record is now
+  built in full and written in two parts.
+* **The vector check's overflow guard was dead code:** a wrapped payload already
+  fails the reset-handler range check. A surviving mutant showed it; it was removed.
+* `firmware_manager_confirm_current` read `SCB->VTOR`; `hwlib_update_confirm` takes
+  the running slot as an argument.
+
+Known and unverified: the window between the reclaim erase and the first commit —
+power lost there loses the state, as in a184; closing it needs a second sector and a
+new format. Not yet run through cppcheck's MISRA addon (Rule 15.5, multiple returns,
+will need suppressions in a184), not built with Keil, and not run on a device.

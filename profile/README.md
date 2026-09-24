@@ -5,7 +5,8 @@ published under the `integra-lib` GitHub organization.
 One repository per component: a project adds only what it uses and moves each
 component's version on its own.
 
-Header-only except `transaction-engine`, no exceptions, no RTTI.
+Header-only except `transaction-engine`, no exceptions, no RTTI. One component,
+`boot-slots`, is C (C11) with a C API instead, because bootloaders are often C.
 
 ## Components
 
@@ -69,6 +70,7 @@ Namespace and include prefix: `hwlib::persistence`, `hwlib/persistence/`.
 |---|---|---|
 | [settings-record](https://github.com/integra-lib/settings-record) | `WriteSettingsRecord`, `ReadSettingsRecord` | settings in flash that read back only if they verify |
 | [littlefs-cpp](https://github.com/integra-lib/littlefs-cpp) | `Littlefs<Device>`, `Littlefs::File` | a filesystem on flash through littlefs, without allocating |
+| boot-slots | `hwlib_boot_prepare`, `hwlib_boot_journal_load`/`_save`, `hwlib_image_check` (C) | an A/B bootloader: which image to start, trial boot and rollback, a power-loss-safe state journal, image header and CRC check |
 
 ### Communication
 
