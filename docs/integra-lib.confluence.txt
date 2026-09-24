@@ -1,48 +1,49 @@
-Библиотека общих компонентов, не зависящих от архитектуры. Заголовочная (кроме одного компонента), C++20, без исключений и RTTI.
+hwlib — библиотека общих компонентов, не зависящих от архитектуры. Заголовочная (кроме одного компонента), C++20, без исключений и RTTI.
 
 Каждый компонент — отдельный репозиторий со своей версией. Проект подключает сабмодулем только те, которыми пользуется, и обновляет их независимо друг от друга.
 
-Сейчас репозитории живут в организации [integra-lib на GitHub|https://github.com/integra-lib] как на временной площадке; планируется переезд в группу GitLab {{internal-projects/integra-lib}}. При переезде изменится только URL в {{.gitmodules}} потребителя.
+Репозитории опубликованы в организации [integra-lib на GitHub|https://github.com/integra-lib]. GitLab-зеркала размещаются в группе {{internal-projects/a000-hwlib}} и её разделах. При смене хоста изменится только URL в {{.gitmodules}} потребителя.
 
 h2. Обзор
 
-Проекты в описании — это где работал исходный код, из которого сделан компонент. Сами версии из integra-lib на железе ещё не запускались: они не зависят от МК, собираются любым тулчейном C++20 и проверены тестами на хосте.
+Проекты в описании — это где работал исходный код, из которого сделан компонент. Сами версии компонентов hwlib на железе ещё не запускались: они не зависят от МК, собираются любым тулчейном C++20 и проверены тестами на хосте.
 
-|| Группа || Репозиторий || Описание ||
-| *Структуры данных* (Data Structures) | ring-buffer | {{RingBuffer<T, SIZE>}} {expand:title=Подробнее}*Когда нужен:* очередь фиксированного размера без динамической памяти \\ *Проекты:* a160-oto-screening, a173-baep{expand} |
+|| Группа hwlib || Репозиторий || Описание ||
+| *Структуры данных* ({{data_structures}}) | ring-buffer | {{RingBuffer<T, SIZE>}} {expand:title=Подробнее}*Когда нужен:* очередь фиксированного размера без динамической памяти \\ *Проекты:* a160-oto-screening, a173-baep{expand} |
 |   | const-map | {{ConstMap<Key, Value, SIZE>}} {expand:title=Подробнее}*Когда нужен:* небольшая таблица соответствий, известная на этапе компиляции \\ *Проекты:* a000-firmware-update-over-modbus, a084_one-home_pde37, a151-sib-bathtub-controller, a168-waveform-generator, a174-hardware, scale{expand} |
 |   | dedup-cache | {{DedupCache<CAPACITY>}} {expand:title=Подробнее}*Когда нужен:* отсев повторов по идентификатору \\ *Проекты:* a174-hardware{expand} |
-| *Утилиты* (Utilities) | function | {{Function<R(Args...)>}} {expand:title=Подробнее}*Когда нужен:* хранение колбэка, когда {{std::function}} недоступен или избыточен \\ *Проекты:* a160-oto-screening, a173-baep{expand} |
+| *Утилиты* ({{utilities}}) | function | {{Function<R(Args...)>}} {expand:title=Подробнее}*Когда нужен:* хранение колбэка, когда {{std::function}} недоступен или избыточен \\ *Проекты:* a160-oto-screening, a173-baep{expand} |
 |   | bit-ops | {{AssembleBytes}}, {{GetByteByIndex}} {expand:title=Подробнее}*Когда нужен:* разбор и сборка целых из байтов при работе с протоколами \\ *Проекты:* a000-firmware-update-over-modbus, a084_one-home_pde37, a138-ble-gateway, a151-sib-bathtub-controller, a159-bpu-firmware, a168-waveform-generator, a174-hardware, scale{expand} |
 |   | enum-utils | {{EnumValue}} {expand:title=Подробнее}*Когда нужен:* перевод элемента перечисления в число \\ *Проекты:* a000-firmware-update-over-modbus, a084_one-home_pde37, a138-ble-gateway, a151-sib-bathtub-controller, a159-bpu-firmware, a168-waveform-generator, a174-hardware, scale{expand} |
 |   | hex-string | {{HexToBytes}}, {{BytesToHex}}, {{BytesToHexReversed}} {expand:title=Подробнее}*Когда нужен:* перевод hex-текста в байты и обратно без динамической памяти \\ *Проекты:* a084_one-home_pde37, a138-ble-gateway, scale{expand} |
-| *Алгоритмы* (Algorithms) | ema-filter | {{EmaFilter}} {expand:title=Подробнее}*Когда нужен:* сглаживание показаний датчика \\ *Проекты:* a174-hardware{expand} |
+|   | byte-codec | {{Store}}, {{Load}}, {{ByteReader}} {expand:title=Подробнее}*Когда нужен:* кодирование целых, enum и float в байты с заданным порядком байтов \\ *Проекты:* a169-ebus, a130-iroma{expand} |
+| *Алгоритмы* ({{algorithms}}) | ema-filter | {{EmaFilter}} {expand:title=Подробнее}*Когда нужен:* сглаживание показаний датчика \\ *Проекты:* a174-hardware{expand} |
 |   | crc | {{Crc8Nrsc5}}, {{Crc16Ccitt}}, {{Crc32IsoHdlc}}, {{Crc32Stream}} {expand:title=Подробнее}*Когда нужен:* контрольные суммы: датчики, протоколы, проверка образа прошивки \\ *CRC-32, тот же полином {{0xEDB88320}}:* a000-bootloader, a000-firmware-update-over-modbus, a146-control-board, a151-sib-bathtub-controller, a160-oto-screening, a168-waveform-generator, a174-hardware \\ *CRC-16, тот же полином {{0x1021}}:* a138-ble-gateway, a159-bpu-firmware, a174-hardware \\ *CRC-8 Sensirion (SHT40):* a138-ble-gateway, a138-ble-sensors{expand} |
 |   | debouncer | {{Debouncer<INC, DEC>}} {expand:title=Подробнее}*Когда нужен:* подтверждение условия по нескольким отсчётам, прежде чем на него реагировать \\ *Проекты:* a160-oto-screening{expand} |
 |   | filters | {{MedianFilter}}, {{HysteresisFilter}}, {{MovingAverage}} {expand:title=Подробнее}*Когда нужен:* очистка показаний датчика: медиана — против выбросов, гистерезис — против дребезга на порогах, скользящее среднее — против постоянного шума \\ *Проекты:* a138-ble-sensors, a163-cgm-firmware, a139-bms48v-firmware{expand} |
-| *Исполнение* (Execution) | work-queue | {{IWorkQueue}} {expand:title=Подробнее}*Когда нужен:* интерфейс отложенного выполнения \\ *Проекты:* a138-ble-sensors, a174-hardware{expand} |
+| *Исполнение* ({{execution}}) | work-queue | {{IWorkQueue}} {expand:title=Подробнее}*Когда нужен:* интерфейс отложенного выполнения \\ *Проекты:* a138-ble-sensors, a174-hardware{expand} |
 |   | periodic-clock | {{IPeriodicClock}} {expand:title=Подробнее}*Когда нужен:* интерфейс монотонных часов и периодического тика \\ *Проекты:* a174-hardware{expand} |
 |   | worker | {{Worker<Mutex>}} {expand:title=Подробнее}*Когда нужен:* отложенная работа: поставить из любого контекста, выполнить всё в одном \\ *Проекты:* a138-ble-gateway{expand} |
-| *События* (Events) | event-manager | {{EventManager<Payload, Queue>}} {expand:title=Подробнее}*Когда нужен:* публикация и подписка на события поверх очереди \\ *Проекты:* a174-hardware{expand} |
+| *События* ({{events}}) | event-manager | {{EventManager<Payload, Queue>}} {expand:title=Подробнее}*Когда нужен:* публикация и подписка на события поверх очереди \\ *Проекты:* a174-hardware{expand} |
 |   | button-event | {{ButtonEventCore}} {expand:title=Подробнее}*Когда нужен:* антидребезг кнопки и разбор нажатия на короткое и длинное \\ *Проекты:* a174-hardware{expand} |
-| *Хранение* (Persistence) | settings-record | {{WriteSettingsRecord}}, {{ReadSettingsRecord}} {expand:title=Подробнее}*Когда нужен:* настройки во флеше, которые читаются только если сошлась контрольная сумма \\ *Проекты:* a174-hardware{expand} |
+| *Хранение* ({{persistence}}) | settings-record | {{WriteSettingsRecord}}, {{ReadSettingsRecord}} {expand:title=Подробнее}*Когда нужен:* настройки во флеше, которые читаются только если сошлась контрольная сумма \\ *Проекты:* a174-hardware{expand} |
 |   | littlefs-cpp | {{Littlefs<Device>}}, {{Littlefs::File}} {expand:title=Подробнее}*Когда нужен:* файловая система на флеше через littlefs — без выделения памяти, с файлом, который закрывается сам \\ *Проекты:* a163-cgm-firmware{expand} |
-| *Связь* (Communication) | transaction-engine | формат кадра, контракт канала, отправитель и приёмник {expand:title=Подробнее}*Когда нужен:* обмен командами с подтверждением поверх ненадёжного канала \\ *Проекты:* a174-hardware{expand} |
+| *Связь* ({{communication}}) | transaction-engine | формат кадра, контракт канала, отправитель и приёмник {expand:title=Подробнее}*Когда нужен:* обмен командами с подтверждением поверх ненадёжного канала \\ *Проекты:* a174-hardware{expand} |
 |   | mqtt-topic | {{MatchTopic}} {expand:title=Подробнее}*Когда нужен:* маршрутизация MQTT-сообщения к подписке, чей фильтр ему соответствует \\ *Проекты:* a084_one-home_pde37, a138-ble-gateway, scale{expand} |
 
-{{transaction_engine}} поставляется одним неделимым компонентом: отправитель, приёмник и формат кадра осмысленны только в одной и той же версии друг друга, поэтому это одна цель с одним зонтичным заголовком.
+{{transaction_engine}} ({{Hwlib::transaction_engine}}) поставляется одним неделимым компонентом: отправитель, приёмник и формат кадра осмысленны только в одной и той же версии друг друга, поэтому это одна цель с одним зонтичным заголовком.
 
 h2. Компоненты
 
-h3. Структуры данных (Data Structures)
+h3. Структуры данных ({{data_structures}})
 
 h4. ring-buffer
 
-{{integra::RingBuffer<T, SIZE>}} — кольцевой буфер фиксированного размера поверх {{std::array}}. Память не выделяет, размер задаётся шаблонным параметром. При заполнении новое значение отбрасывается. Методы: {{Push}}, {{Pop}}, {{Clear}}, {{IsEmpty}}.
+{{hwlib::data_structures::RingBuffer<T, SIZE>}} — кольцевой буфер фиксированного размера поверх {{std::array}}. Память не выделяет, размер задаётся шаблонным параметром. При заполнении новое значение отбрасывается. Методы: {{Push}}, {{Pop}}, {{Clear}}, {{IsEmpty}}.
 
 {code:language=cpp}
-#include <integra/ring_buffer.hpp>
-integra::RingBuffer<std::uint16_t, 32> samples;
+#include <hwlib/data_structures/ring_buffer.hpp>
+hwlib::data_structures::RingBuffer<std::uint16_t, 32> samples;
 samples.Push(value);
 std::uint16_t out{};
 if (samples.Pop(out))
@@ -53,11 +54,11 @@ if (samples.Pop(out))
 
 h4. const-map
 
-{{integra::ConstMap<Key, Value, SIZE>}} — таблица «ключ — значение», задаваемая на этапе компиляции. Поиск линейный, поэтому компонент предназначен для небольших таблиц. Отсутствие ключа — не ошибка, а {{std::nullopt}}.
+{{hwlib::data_structures::ConstMap<Key, Value, SIZE>}} — таблица «ключ — значение», задаваемая на этапе компиляции. Поиск линейный, поэтому компонент предназначен для небольших таблиц. Отсутствие ключа — не ошибка, а {{std::nullopt}}.
 
 {code:language=cpp}
-#include <integra/const_map.hpp>
-constexpr integra::ConstMap<Code, std::string_view, 3> NAMES{{{
+#include <hwlib/data_structures/const_map.hpp>
+constexpr hwlib::data_structures::ConstMap<Code, std::string_view, 3> NAMES{{{
     {Code::eOk,      "ok"},
     {Code::eTimeout, "timeout"},
     {Code::eCrc,     "crc"},
@@ -70,11 +71,11 @@ if (const auto name = NAMES.Find(code); name.has_value())
 
 h4. dedup-cache
 
-{{integra::DedupCache<CAPACITY>}} — кольцевой кеш последних увиденных идентификаторов фиксированной ёмкости. Память не выделяет; при переполнении вытесняется самый старый. Нужен там, где повтор сообщения надо отличить от нового.
+{{hwlib::data_structures::DedupCache<CAPACITY>}} — кольцевой кеш последних увиденных идентификаторов фиксированной ёмкости. Память не выделяет; при переполнении вытесняется самый старый. Нужен там, где повтор сообщения надо отличить от нового.
 
 {code:language=cpp}
-#include <integra/dedup_cache.hpp>
-integra::DedupCache<16> seen;
+#include <hwlib/data_structures/dedup_cache.hpp>
+hwlib::data_structures::DedupCache<16> seen;
 if (!seen.Contains(messageId))
 {
     Handle(message);
@@ -82,15 +83,15 @@ if (!seen.Contains(messageId))
 }
 {code}
 
-h3. Утилиты (Utilities)
+h3. Утилиты ({{utilities}})
 
 h4. function
 
-{{integra::Function<R(Args...)>}} — облегчённый аналог {{std::function}}: хранит любой вызываемый объект с заданной сигнатурой. Копирование запрещено, перемещение разрешено. Вызываемый объект размещается в куче, поэтому в контексте без динамической памяти компонент неприменим.
+{{hwlib::utilities::Function<R(Args...)>}} — облегчённый аналог {{std::function}}: хранит любой вызываемый объект с заданной сигнатурой. Копирование запрещено, перемещение разрешено. Вызываемый объект размещается в куче, поэтому в контексте без динамической памяти компонент неприменим.
 
 {code:language=cpp}
-#include <integra/function.hpp>
-integra::Function<void(int)> handler = [](int code) { Handle(code); };
+#include <hwlib/utilities/function.hpp>
+hwlib::utilities::Function<void(int)> handler = [](int code) { Handle(code); };
 handler(42);
 if (handler)
 {
@@ -103,20 +104,20 @@ h4. bit-ops
 Сборка и разбор беззнаковых целых по байтам. Всё {{constexpr}}, вычисляется на этапе компиляции. Типы проверяются: только беззнаковые целые, число байтов не превышает размер результата.
 
 {code:language=cpp}
-#include <integra/bit_ops.hpp>
+#include <hwlib/utilities/bit_ops.hpp>
 // собрать целое из байтов, младший первым
-constexpr auto word = integra::AssembleBytes<std::uint16_t>(0x12U, 0x34U); // 0x3412
+constexpr auto word = hwlib::utilities::AssembleBytes<std::uint16_t>(0x12U, 0x34U); // 0x3412
 // извлечь байт по индексу, 0 — младший
-constexpr auto lsb = integra::GetByteByIndex<0>(0xABCDU); // 0xCD
+constexpr auto lsb = hwlib::utilities::GetByteByIndex<0>(0xABCDU); // 0xCD
 {code}
 
 h4. enum-utils
 
-{{integra::EnumValue}} — преобразует элемент перечисления в его числовое значение, сохраняя базовый тип.
+{{hwlib::utilities::EnumValue}} — преобразует элемент перечисления в его числовое значение, сохраняя базовый тип.
 
 {code:language=cpp}
-#include <integra/enum_utils.hpp>
-const auto raw = integra::EnumValue(Command::eReset);
+#include <hwlib/utilities/enum_utils.hpp>
+const auto raw = hwlib::utilities::EnumValue(Command::eReset);
 {code}
 
 h4. hex-string
@@ -130,31 +131,49 @@ h4. hex-string
 {{HexCharCount(n)}} даёт нужный размер буфера под форматирование; массив на единицу больше, инициализированный нулями, заодно оказывается C-строкой.
 
 {code:language=cpp}
-#include <integra/hex_string.hpp>
+#include <hwlib/utilities/hex_string.hpp>
 
-std::array<char, integra::HexCharCount(sizeof(mac)) + 1U> text{};
-if (integra::BytesToHexReversed(mac, text).has_value())
+std::array<char, hwlib::utilities::HexCharCount(sizeof(mac)) + 1U> text{};
+if (hwlib::utilities::BytesToHexReversed(mac, text).has_value())
 {
     LOG_INF("peer %s", text.data());
 }
 
 std::array<std::uint8_t, 6> parsed{};
-const auto count = integra::HexToBytes(text.data(), parsed);
+const auto count = hwlib::utilities::HexToBytes(text.data(), parsed);
 if (!count.has_value())
 {
     return Reject();
 }
 {code}
 
-h3. Алгоритмы (Algorithms)
+h4. byte-codec
+
+Кодирует целые числа, enum и float в big- или little-endian байты. {{Store}} и {{Load}} работают со значением фиксированного размера; {{ByteReader}} читает поля пакета по порядку из заимствованного буфера. Ошибка короткого чтения становится sticky, а чтение массива выполняется целиком или не меняет его.
+
+{code:language=cpp}
+#include <hwlib/utilities/byte_codec.hpp>
+
+const auto bytes = hwlib::utilities::Store<std::endian::big>(std::uint32_t{0x12345678U});
+const auto value = hwlib::utilities::Load<std::endian::big, std::uint32_t>(std::span{bytes});
+
+hwlib::utilities::ByteReader<std::endian::little, std::byte> reader{payload};
+reader >> vendor >> name >> version;
+if (reader.Failed())
+{
+    // короткий пакет: непрочитанное поле и курсор не меняются
+}
+{code}
+
+h3. Алгоритмы ({{algorithms}})
 
 h4. ema-filter
 
-{{integra::EmaFilter}} — экспоненциальное скользящее среднее. Первое измерение принимается без запаздывания: {{Update()}} сразу возвращает поданное значение, а не ползёт к нему от нуля. {{Reset()}} возвращает фильтр в это состояние.
+{{hwlib::algorithms::EmaFilter}} — экспоненциальное скользящее среднее. Первое измерение принимается без запаздывания: {{Update()}} сразу возвращает поданное значение, а не ползёт к нему от нуля. {{Reset()}} возвращает фильтр в это состояние.
 
 {code:language=cpp}
-#include <integra/ema_filter.hpp>
-integra::EmaFilter filter{0.25F};
+#include <hwlib/algorithms/ema_filter.hpp>
+hwlib::algorithms::EmaFilter filter{0.25F};
 const float smoothed = filter.Update(rawVoltage);
 {code}
 
@@ -168,10 +187,10 @@ h4. crc
 * {{Crc32Stream}} — инкрементальная форма CRC-32 для данных, приходящих частями: проверка образа прошивки постранично.
 
 {code:language=cpp}
-#include <integra/crc.hpp>
-const std::uint16_t frameCrc = integra::Crc16Ccitt(frameBytes);
+#include <hwlib/algorithms/crc.hpp>
+const std::uint16_t frameCrc = hwlib::algorithms::Crc16Ccitt(frameBytes);
 
-integra::Crc32Stream image;
+hwlib::algorithms::Crc32Stream image;
 for (const auto& page : pages)
 {
     image.Update(page);
@@ -181,16 +200,16 @@ const bool valid = image.Value() == expectedCrc;
 
 h4. debouncer
 
-{{integra::Debouncer<INC, DEC>}} — антидребезг по числу отсчётов. Насыщающийся счётчик растёт на {{INC}} с каждым истинным отсчётом и уменьшается на {{DEC}} с каждым ложным; состояние «установлен» держится, пока счётчик стоит на пороге.
+{{hwlib::algorithms::Debouncer<INC, DEC>}} — антидребезг по числу отсчётов. Насыщающийся счётчик растёт на {{INC}} с каждым истинным отсчётом и уменьшается на {{DEC}} с каждым ложным; состояние «установлен» держится, пока счётчик стоит на пороге.
 
 Он несимметричен, и это его назначение, а не упущение: установиться ему нужно {{threshold / INC}} согласных отсчётов, а сброситься при {{DEC}}, равном {{INC}}, — одного несогласного. Он подтверждает условие, прежде чем на него реагировать, и отпускает, как только условие нарушено. Если сброс тоже должен сопротивляться, нужен гистерезис — это не он. Шаги взвешивают свидетельства: {{Debouncer<1, 3>}} устанавливается медленно, а сбрасывается втрое быстрее.
 
 Считает отсчёты, а не время. Для кнопки на пине, где важно время установления, есть {{button-event}}.
 
 {code:language=cpp}
-#include <integra/debouncer.hpp>
+#include <hwlib/algorithms/debouncer.hpp>
 
-integra::Debouncer<> overLimit{ 5U };   // пять превышений подряд, прежде чем поднять тревогу
+hwlib::algorithms::Debouncer<> overLimit{ 5U };   // пять превышений подряд, прежде чем поднять тревогу
 if (overLimit.Update(reading > LIMIT))
 {
     RaiseAlarm();
@@ -206,11 +225,11 @@ h4. filters
 * {{MovingAverage<T, N>}} — скользящее среднее. Сумма целых хранится в 64 битах, сумма с плавающей точкой пересчитывается из окна раз за круг, а пока окно не заполнено, среднее берётся по уже полученным отсчётам.
 
 {code:language=cpp}
-#include <integra/filters.hpp>
+#include <hwlib/algorithms/filters.hpp>
 
-integra::MedianFilter<std::uint32_t, 15> voltage{ 5U };
-integra::HysteresisFilter status{ std::array{ LOW_MV, STANDBY_MV, GOOD_MV }, BAND_MV };
-integra::MovingAverage<float, 4> current;
+hwlib::algorithms::MedianFilter<std::uint32_t, 15> voltage{ 5U };
+hwlib::algorithms::HysteresisFilter status{ std::array{ LOW_MV, STANDBY_MV, GOOD_MV }, BAND_MV };
+hwlib::algorithms::MovingAverage<float, 4> current;
 
 voltage.Push(sample);
 if (const auto mv = voltage.Value(); mv.has_value())
@@ -219,15 +238,15 @@ if (const auto mv = voltage.Value(); mv.has_value())
 }
 {code}
 
-h3. Исполнение (Execution)
+h3. Исполнение ({{execution}})
 
 h4. work-queue
 
-{{integra::IWorkQueue}} — интерфейс отложенного выполнения: обработчик запускается позже, в том контексте, которым владеет реализация. Реализации платформенные и живут в проекте, библиотека даёт только контракт.
+{{hwlib::execution::IWorkQueue}} — интерфейс отложенного выполнения: обработчик запускается позже, в том контексте, которым владеет реализация. Реализации платформенные и живут в проекте, библиотека даёт только контракт.
 
 {code:language=cpp}
-#include <integra/work_queue.hpp>
-void Setup(integra::IWorkQueue& queue)
+#include <hwlib/execution/work_queue.hpp>
+void Setup(hwlib::execution::IWorkQueue& queue)
 {
     queue.SetHandler([] { DoDeferredWork(); });
     queue.Submit();
@@ -236,16 +255,16 @@ void Setup(integra::IWorkQueue& queue)
 
 h4. periodic-clock
 
-{{integra::IPeriodicClock}} — интерфейс монотонных часов и периодического тика. Отделяет две единственные аппаратные зависимости адаптерного слоя, благодаря чему код над ним тестируется на хосте с подставной реализацией.
+{{hwlib::execution::IPeriodicClock}} — интерфейс монотонных часов и периодического тика. Отделяет две единственные аппаратные зависимости адаптерного слоя, благодаря чему код над ним тестируется на хосте с подставной реализацией.
 
 {code:language=cpp}
-#include <integra/periodic_clock.hpp>
+#include <hwlib/execution/periodic_clock.hpp>
 clock.StartTick(std::chrono::milliseconds{100}, [] { engine.OnTick(); });
 {code}
 
 h4. worker
 
-{{integra::Worker<Mutex>}} — очередь отложенной работы: любой контекст ставит в неё вызываемый объект, а контекст, которому принадлежит worker, выполняет всё накопленное при вызове {{Update()}} — в порядке постановки.
+{{hwlib::execution::Worker<Mutex>}} — очередь отложенной работы: любой контекст ставит в неё вызываемый объект, а контекст, которому принадлежит worker, выполняет всё накопленное при вызове {{Update()}} — в порядке постановки.
 
 Мьютекс захватывается только на время работы с очередью, но не на время выполнения работы. Поэтому работа может ставить новую работу — та выполнится в том же {{Update()}}, — а сам worker работает с нерекурсивным мьютексом, каким обычно и бывает мьютекс ядра.
 
@@ -254,28 +273,28 @@ h4. worker
 Очередь растёт в куче, по одному {{std::function}} на поставленную работу: производитель, обгоняющий {{Update()}}, растит её без ограничения.
 
 {code:language=cpp}
-#include <integra/worker.hpp>
+#include <hwlib/execution/worker.hpp>
 
-integra::Worker<ZephyrMutex> worker;   // или Worker<std::mutex>, где он есть
+hwlib::execution::Worker<ZephyrMutex> worker;   // или Worker<std::mutex>, где он есть
 worker.Post([this] { OnStopped(); });   // из любого контекста
 worker.Update();                        // в главном цикле: выполнить всё накопленное
 {code}
 
-h3. События (Events)
+h3. События ({{events}})
 
 h4. event-manager
 
-{{integra::EventManager<Payload, Queue, MaxSubscriptions>}} — публикация и подписка поверх очереди. Обработчики регистрируются по идентификатору события, доставка идёт в том контексте, который вызвал {{Dispatch()}} (блокирующий) или {{TryDispatch()}} (неблокирующий, для потребителей со своим циклом).
+{{hwlib::events::EventManager<Payload, Queue, MaxSubscriptions>}} — публикация и подписка поверх очереди. Обработчики регистрируются по идентификатору события, доставка идёт в том контексте, который вызвал {{Dispatch()}} (блокирующий) или {{TryDispatch()}} (неблокирующий, для потребителей со своим циклом).
 
-Очередь компоненту не принадлежит, её даёт потребитель: на устройстве это примитив RTOS, в тестах — массив. Реализация удовлетворяет концепту {{integra::EventQueueLike}} — {{TryPush}} (не блокирует, вызывается из прерывания), {{TryPop}}, {{PopBlocking}}. Требование trivially copyable payload принадлежит очереди, которая копирует событие побайтно, а не самому компоненту.
+Очередь компоненту не принадлежит, её даёт потребитель: на устройстве это примитив RTOS, в тестах — массив. Реализация удовлетворяет концепту {{hwlib::events::EventQueueLike}} — {{TryPush}} (не блокирует, вызывается из прерывания), {{TryPop}}, {{PopBlocking}}. Требование trivially copyable payload принадлежит очереди, которая копирует событие побайтно, а не самому компоненту.
 
 Время передаётся снаружи параметром {{nowMs}}, часов компонент не читает. Переполнение таблицы подписок и переполнение очереди не пишутся в лог, а сообщаются колбэками: компонент, который логирует, вынужден выбрать backend и перестаёт быть независимым от платформы. Отчёт о потерянных событиях копит счётчик и выдаётся не чаще одного раза в {{QUEUE_FULL_REPORT_PERIOD_MS}} — знать о потерях надо, знать о каждой в отдельности не надо, а незадросселированный отчёт замедляет и без того отстающий цикл.
 
 {code:language=cpp}
-#include <integra/event_manager.hpp>
+#include <hwlib/events/event_manager.hpp>
 
 MsgqEventQueue<AppPayload, 8> queue;              // адаптер проекта поверх k_msgq
-integra::EventManager<AppPayload, decltype(queue)> events{ queue };
+hwlib::events::EventManager<AppPayload, decltype(queue)> events{ queue };
 
 events.Subscribe(AppEvent::eTick, [](const AppPayload& payload) { OnTick(payload); });
 events.SetOnEventsDropped([](std::uint8_t id, std::uint32_t dropped) {
@@ -288,16 +307,16 @@ while (events.TryDispatch()) {}
 
 h4. button-event
 
-{{integra::ButtonEventCore}} — антидребезг одной кнопки и разбор нажатия: короткое, длинное или слишком короткое, чтобы что-то значить. Пин, таймеры и часы снаружи: ядро получает фронт с пина, уровень, снятый после выдержки, и срабатывание длинного таймаута, а возвращает {{ButtonAction}} — что сделать с таймерами. Возврат помечен атрибутом {{nodiscard}}: проигнорированный {{ButtonAction}} — это незаведённый таймер, то есть кнопка, которая молчит.
+{{hwlib::events::ButtonEventCore}} — антидребезг одной кнопки и разбор нажатия: короткое, длинное или слишком короткое, чтобы что-то значить. Пин, таймеры и часы снаружи: ядро получает фронт с пина, уровень, снятый после выдержки, и срабатывание длинного таймаута, а возвращает {{ButtonAction}} — что сделать с таймерами. Возврат помечен атрибутом {{nodiscard}}: проигнорированный {{ButtonAction}} — это незаведённый таймер, то есть кнопка, которая молчит.
 
 Три времени задают смысл нажатия. Фронт опрашивается один раз, после {{confirmMs}} тишины на линии. Подтверждённое нажатие короче {{minPressMs}} — это касание, а не решение, и оно не сообщается вовсе. Нажатие, всё ещё удерживаемое через {{longPressMs}}, — длинное, и на отпускании оно не сообщается ещё раз как короткое: одно нажатие — одно решение. Без колбэка длинного нажатия таймер не заводится совсем.
 
 Все три входа должны вызываться из одного контекста. На устройстве и фронт с пина, и длинный таймаут приходят в прерывании, поэтому адаптер откладывает их в очередь работ, а не зовёт напрямую, — именно это позволяет держать состояние обычными {{bool}} и делать в колбэках настоящую работу.
 
 {code:language=cpp}
-#include <integra/button_event.hpp>
+#include <hwlib/events/button_event.hpp>
 
-integra::ButtonEventCore button{ { .confirmMs = 20, .minPressMs = 200, .longPressMs = 1000 } };
+hwlib::events::ButtonEventCore button{ { .confirmMs = 20, .minPressMs = 200, .longPressMs = 1000 } };
 button.SetOnShortPress([] { ToggleView(); });
 button.SetOnLongPress([] { EnterService(); });
 
@@ -307,13 +326,13 @@ Apply(button.OnConfirmed(pin.Get(), k_uptime_get())); // из очереди р�
 Apply(button.OnLongPressElapsed(pin.Get()));          // из очереди работ
 {code}
 
-h3. Хранение (Persistence)
+h3. Хранение ({{persistence}})
 
 h4. settings-record
 
 Запись настроек с контрольной суммой: {{WriteSettingsRecord}} кладёт в хранилище payload вместе с CRC-32, {{ReadSettingsRecord}} отдаёт его обратно, только если сумма сошлась, и не трогает переданную переменную, если нет, — значение по умолчанию переживает и первую загрузку, и испорченную ячейку.
 
-Хранилище даёт потребитель: на устройстве это NVS или драйвер EEPROM, в тестах — словарь. Оно удовлетворяет концепту {{integra::RecordStorageLike}} — {{Write}} и {{Read}} поверх {{std::span}}. Имя раздела и флеш-устройство остаются в проекте, в библиотеку переходит только формат записи.
+Хранилище даёт потребитель: на устройстве это NVS или драйвер EEPROM, в тестах — словарь. Оно удовлетворяет концепту {{hwlib::persistence::RecordStorageLike}} — {{Write}} и {{Read}} поверх {{std::span}}. Имя раздела и флеш-устройство остаются в проекте, в библиотеку переходит только формат записи.
 
 Зачем сумма: хранилище — не канал. Недописанная после пропадания питания запись или деградировавшая ячейка читаются как правдоподобное значение нужного размера, само чтение при этом не падает. Контрольная сумма — единственное, что отличает это от настройки, которую устройство действительно сохранило.
 
@@ -322,7 +341,7 @@ Payload хранится сырыми байтами, поэтому обяза�
 Зависит от компонента {{crc}}.
 
 {code:language=cpp}
-#include <integra/settings_record.hpp>
+#include <hwlib/persistence/settings_record.hpp>
 
 struct Calibration
 {
@@ -330,18 +349,18 @@ struct Calibration
     float scale{};
 };
 
-if (!integra::WriteSettingsRecord(storage, CALIBRATION_ID, calibration))
+if (!hwlib::persistence::WriteSettingsRecord(storage, CALIBRATION_ID, calibration))
 {
     LOG_ERR("calibration not saved");
 }
 
 Calibration calibration{ DEFAULT_CALIBRATION };
-std::ignore = integra::ReadSettingsRecord(storage, CALIBRATION_ID, calibration);
+std::ignore = hwlib::persistence::ReadSettingsRecord(storage, CALIBRATION_ID, calibration);
 {code}
 
 h4. littlefs-cpp
 
-Обёртка над littlefs: файловая система поверх любого блочного устройства с {{Read}}/{{Write}}/{{Erase}} (и {{Sync}}, если он есть), все буферы внутри объекта, файл, который закрывается сам. Сама littlefs в компонент не входит: её цель CMake даёт проект, имя задаётся {{INTEGRA_LITTLEFS_TARGET}}. Проверено на littlefs v2.10.1.
+Обёртка над littlefs: файловая система поверх любого блочного устройства с {{Read}}/{{Write}}/{{Erase}} (и {{Sync}}, если он есть), все буферы внутри объекта, файл, который закрывается сам. Сама littlefs в компонент не входит: её цель CMake даёт проект, имя задаётся {{HWLIB_LITTLEFS_TARGET}}. Проверено на littlefs v2.10.1.
 
 * Монтирование ничего не стирает по своей инициативе. {{Mount()}} только монтирует; {{MountOrFormat()}} форматирует лишь при {{LFS_ERR_CORRUPT}} — так littlefs отвечает на чистую флеш при первом запуске. Любая другая ошибка, в том числе ошибка ввода-вывода, возвращается, и данные остаются на месте.
 * Память не выделяется: буферы файловой системы — её члены, файл несёт свой кеш и открывается через {{lfs_file_opencfg}}. Компонент собирается и тестируется с {{LFS_NO_MALLOC}}.
@@ -350,47 +369,47 @@ h4. littlefs-cpp
 * {{ForEach}} закрывает каталог на любом выходе, {{FileCount}} построен на нём.
 
 {code:language=cpp}
-#include <integra/littlefs.hpp>
+#include <hwlib/persistence/littlefs.hpp>
 
-integra::Littlefs<Flash> fs{ flash, { .blockSize = 4096U, .blockCount = 32U } };
+hwlib::persistence::Littlefs<Flash> fs{ flash, { .blockSize = 4096U, .blockCount = 32U } };
 if (const int err = fs.MountOrFormat(); err != LFS_ERR_OK)
 {
-    LOG_ERR("filesystem: %s", integra::LittlefsErrorName(err).data());
+    LOG_ERR("filesystem: %s", hwlib::persistence::LittlefsErrorName(err).data());
 }
 
-integra::Littlefs<Flash>::File file{ fs };
+hwlib::persistence::Littlefs<Flash>::File file{ fs };
 if (file.Open("/ring/0001", LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) == LFS_ERR_OK)
 {
     std::ignore = file.Write(record);
 }   // закрыт — и записан — здесь
 {code}
 
-h3. Связь (Communication)
+h3. Связь ({{communication}})
 
 h4. transaction-engine
 
 Транзакционный протокол поверх ненадёжного канала: отправка с подтверждением, повторы с экспоненциальным backoff, дедупликация на приёме. Поставляется одним компонентом — части протокола версионируются вместе.
 
 {code:language=cpp}
-#include <integra/transaction_engine.hpp>
+#include <hwlib/communication/transaction_engine.hpp>
 {code}
 
 h5. Формат кадра
 
-{{integra::TransactionFrame}}: идентификатор транзакции, тип, метка времени, полезная нагрузка до 64 байт, контрольная сумма CRC-16/CCITT-FALSE из компонента {{crc}}. {{EncodeTransactionFrame}} возвращает число записанных байт либо 0, если нагрузка велика или буфер мал. {{DecodeTransactionFrame}} возвращает {{false}} при несовпадении суммы, обрезанном кадре или несогласованной длине.
+{{hwlib::communication::TransactionFrame}}: идентификатор транзакции, тип, метка времени, полезная нагрузка до 64 байт, контрольная сумма CRC-16/CCITT-FALSE из компонента {{crc}}. {{EncodeTransactionFrame}} возвращает число записанных байт либо 0, если нагрузка велика или буфер мал. {{DecodeTransactionFrame}} возвращает {{false}} при несовпадении суммы, обрезанном кадре или несогласованной длине.
 
 h5. Канал
 
-{{integra::ITransactionTransport}} — интерфейс, через который протокол отправляет и принимает сырые байты. Что под ним — Zigbee, BLE, UART — протокол не знает. Отправитель и приёмник регистрируют обработчики по отдельности, и каждый принятый кадр доставляется обоим: демультиплексирование не нужно, потому что каждая сторона игнорирует чужие кадры.
+{{hwlib::communication::ITransactionTransport}} — интерфейс, через который протокол отправляет и принимает сырые байты. Что под ним — Zigbee, BLE, UART — протокол не знает. Отправитель и приёмник регистрируют обработчики по отдельности, и каждый принятый кадр доставляется обоим: демультиплексирование не нужно, потому что каждая сторона игнорирует чужие кадры.
 
 h5. Отправитель
 
-{{integra::ReliableEventSenderCore<MAX_IN_FLIGHT>}} — назначает идентификатор транзакции, ждёт подтверждения, повторяет с экспоненциальным backoff, паркует отправку, пока канал недоступен, и сообщает об окончательной неудаче.
+{{hwlib::communication::ReliableEventSenderCore<MAX_IN_FLIGHT>}} — назначает идентификатор транзакции, ждёт подтверждения, повторяет с экспоненциальным backoff, паркует отправку, пока канал недоступен, и сообщает об окончательной неудаче.
 
 Время передаётся снаружи параметром {{nowMs}}, а не читается внутри, поэтому машина состояний тестируется на хосте с поддельными часами. Число попыток включает первую отправку: при {{maxRetry = 4}} уходит ровно четыре кадра, а не пять.
 
 {code:language=cpp}
-integra::ReliableEventSenderCore<2> sender{deviceId, sendFn};
+hwlib::communication::ReliableEventSenderCore<2> sender{deviceId, sendFn};
 sender.SetOnConfirmed([](std::uint32_t txnId) { MarkDone(txnId); });
 sender.SetOnFailed([](std::uint32_t txnId) { MarkFailed(txnId); });
 const auto txnId = sender.Submit(commandType, payload, nowMs);
@@ -398,16 +417,16 @@ const auto txnId = sender.Submit(commandType, payload, nowMs);
 
 h5. Приёмник
 
-{{integra::ReliableEventReceiverCore<DEDUP_CAPACITY>}} — проверяет кадр, отбрасывает повтор уже обработанной транзакции, передаёт новую в обработчик и всегда отвечает подтверждением с тем же идентификатором. Повтор подтверждается, но второй раз не обрабатывается: иначе потерянное подтверждение приводило бы к двойному выполнению команды.
+{{hwlib::communication::ReliableEventReceiverCore<DEDUP_CAPACITY>}} — проверяет кадр, отбрасывает повтор уже обработанной транзакции, передаёт новую в обработчик и всегда отвечает подтверждением с тем же идентификатором. Повтор подтверждается, но второй раз не обрабатывается: иначе потерянное подтверждение приводило бы к двойному выполнению команды.
 
 {code:language=cpp}
-integra::ReliableEventReceiverCore<16> receiver{handlerFn, sendAckFn};
+hwlib::communication::ReliableEventReceiverCore<16> receiver{handlerFn, sendAckFn};
 receiver.OnFrameReceived(rawBytes);
 {code}
 
 h4. mqtt-topic
 
-{{integra::MatchTopic}} — соответствует ли фильтр подписки MQTT имени топика, по разделу 4.7 спецификации MQTT 3.1.1 (в 5.0 не менялся). Фильтр разбирается по уровням, от {{/}} до {{/}}:
+{{hwlib::communication::MatchTopic}} — соответствует ли фильтр подписки MQTT имени топика, по разделу 4.7 спецификации MQTT 3.1.1 (в 5.0 не менялся). Фильтр разбирается по уровням, от {{/}} до {{/}}:
 
 * {{+}} соответствует ровно одному уровню, в том числе пустому;
 * {{#}} соответствует своему уровню, всем уровням ниже и родительскому — {{sport/#}} соответствует {{sport}};
@@ -416,10 +435,10 @@ h4. mqtt-topic
 Символ подстановки считается таковым, только когда он занимает весь уровень. {{#}} не на последнем уровне делает фильтр недействительным, и такой фильтр не соответствует ничему. Функция {{constexpr}}.
 
 {code:language=cpp}
-#include <integra/mqtt_topic.hpp>
+#include <hwlib/communication/mqtt_topic.hpp>
 
-static_assert(integra::MatchTopic("home/+/temp", "home/kitchen/temp"));
-if (integra::MatchTopic(subscription.filter, message.topic))
+static_assert(hwlib::communication::MatchTopic("home/+/temp", "home/kitchen/temp"));
+if (hwlib::communication::MatchTopic(subscription.filter, message.topic))
 {
     subscription.handler(message);
 }
@@ -432,15 +451,15 @@ h3. 1. Добавить нужные компоненты сабмодулями
 Подключается только то, чем пользуетесь: неиспользуемые компоненты не скачиваются вовсе.
 
 {code:language=bash}
-git submodule add git@github.com:integra-lib/crc.git external/integra/crc
+git submodule add git@github.com:integra-lib/crc.git external/hwlib/crc
 git commit -m "build: add integra-lib crc component"
 {code}
 
 h3. 2. Подключить в CMake
 
 {code:language=cmake}
-add_subdirectory(external/integra/crc)
-target_link_libraries(app PRIVATE Integra::crc)
+add_subdirectory(external/hwlib/crc)
+target_link_libraries(app PRIVATE Hwlib::crc)
 {code}
 
 Каждый компонент несёт свой каталог включений, поэтому заголовок недоступен, пока компонент не слинкован: забытая зависимость даёт ошибку компиляции, а не случайно работающую сборку.
@@ -448,7 +467,7 @@ target_link_libraries(app PRIVATE Integra::crc)
 h3. 3. Включить заголовок
 
 {code:language=cpp}
-#include <integra/crc.hpp>
+#include <hwlib/algorithms/crc.hpp>
 {code}
 
 h3. Компонент с зависимостями
@@ -456,26 +475,26 @@ h3. Компонент с зависимостями
 Зависимости есть у трёх компонентов: {{transaction-engine}} нужны {{crc}}, {{bit-ops}} и {{dedup-cache}}, {{settings-record}} — {{crc}}, а {{littlefs-cpp}} — сама littlefs, сторонняя библиотека, цель CMake для которой даёт проект. Они подключаются *рядом* с зависимым компонентом, а не внутрь него, — тогда в дереве проекта каждый компонент существует ровно в одном экземпляре и две разные версии одного компонента в одну прошивку попасть не могут.
 
 {code:language=cmake}
-add_subdirectory(external/integra/crc)
-add_subdirectory(external/integra/bit-ops)
-add_subdirectory(external/integra/dedup-cache)
-add_subdirectory(external/integra/transaction-engine)
+add_subdirectory(external/hwlib/crc)
+add_subdirectory(external/hwlib/bit-ops)
+add_subdirectory(external/hwlib/dedup-cache)
+add_subdirectory(external/hwlib/transaction-engine)
 {code}
 
 Если компонента нет или его версия вне допустимого диапазона, CMake останавливается на configure с сообщением, в котором названы и компонент, и найденная версия:
 
 {noformat}
-transaction_engine needs Integra::crc >= 0.1.0 and < 0.2.0, found 0.2.0.
+transaction_engine needs Hwlib::crc >= 0.2.0 and < 0.3.0, found 0.3.0.
 {noformat}
 
 h3. Версии
 
-Каждый компонент выпускается независимо и помечается тегом {{vX.Y.Z}}. До версии 1.0 minor-релиз может ломать API — поэтому зависимые компоненты принимают ровно один minor.
+Каждый компонент выпускается независимо и помечается тегом {{vX.Y.Z}}. До версии 1.0 minor-релиз может ломать API — поэтому зависимые компоненты принимают версию в текущем minor-диапазоне 0.2.x.
 
 {code:language=bash}
-git -C external/integra/crc fetch --tags
-git -C external/integra/crc checkout v0.2.0
-git add external/integra/crc
+git -C external/hwlib/crc fetch --tags
+git -C external/hwlib/crc checkout v0.2.0
+git add external/hwlib/crc
 git commit -m "build: bump crc to v0.2.0"
 {code}
 

@@ -1,6 +1,7 @@
-# integra-lib
+# hwlib
 
-Architecture-independent C++20 components shared between firmware projects.
+Architecture-independent C++20 components shared between firmware projects,
+published under the `integra-lib` GitHub organization.
 One repository per component: a project adds only what it uses and moves each
 component's version on its own.
 
@@ -10,6 +11,8 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 
 ### Data structures
 
+Namespace and include prefix: `hwlib::data_structures`, `hwlib/data_structures/`.
+
 | Repository | Provides | Reach for it when |
 |---|---|---|
 | [ring-buffer](https://github.com/integra-lib/ring-buffer) | `RingBuffer<T, SIZE>` | a fixed-size queue with no dynamic allocation |
@@ -18,14 +21,19 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 
 ### Utilities
 
+Namespace and include prefix: `hwlib::utilities`, `hwlib/utilities/`.
+
 | Repository | Provides | Reach for it when |
 |---|---|---|
 | [function](https://github.com/integra-lib/function) | `Function<R(Args...)>` | holding a callback where `std::function` is unavailable or too much |
 | [bit-ops](https://github.com/integra-lib/bit-ops) | `AssembleBytes`, `GetByteByIndex` | taking integers apart and back together in a protocol |
 | [enum-utils](https://github.com/integra-lib/enum-utils) | `EnumValue` | an enumerator's numeric value |
 | [hex-string](https://github.com/integra-lib/hex-string) | `HexToBytes`, `BytesToHex`, `BytesToHexReversed` | hex text to bytes and back, without allocating |
+| [byte-codec](https://github.com/integra-lib/byte-codec) | `Store`, `Load`, `ByteReader` | encoding integers, enums and floats as big- or little-endian bytes |
 
 ### Algorithms
+
+Namespace and include prefix: `hwlib::algorithms`, `hwlib/algorithms/`.
 
 | Repository | Provides | Reach for it when |
 |---|---|---|
@@ -36,6 +44,8 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 
 ### Execution
 
+Namespace and include prefix: `hwlib::execution`, `hwlib/execution/`.
+
 | Repository | Provides | Reach for it when |
 |---|---|---|
 | [work-queue](https://github.com/integra-lib/work-queue) | `IWorkQueue` | an interface for deferred execution |
@@ -44,6 +54,8 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 
 ### Events
 
+Namespace and include prefix: `hwlib::events`, `hwlib/events/`.
+
 | Repository | Provides | Reach for it when |
 |---|---|---|
 | [event-manager](https://github.com/integra-lib/event-manager) | `EventManager<Payload, Queue>` | publish/subscribe over a queue you supply |
@@ -51,12 +63,16 @@ Header-only except `transaction-engine`, no exceptions, no RTTI.
 
 ### Persistence
 
+Namespace and include prefix: `hwlib::persistence`, `hwlib/persistence/`.
+
 | Repository | Provides | Reach for it when |
 |---|---|---|
 | [settings-record](https://github.com/integra-lib/settings-record) | `WriteSettingsRecord`, `ReadSettingsRecord` | settings in flash that read back only if they verify |
 | [littlefs-cpp](https://github.com/integra-lib/littlefs-cpp) | `Littlefs<Device>`, `Littlefs::File` | a filesystem on flash through littlefs, without allocating |
 
 ### Communication
+
+Namespace and include prefix: `hwlib::communication`, `hwlib/communication/`.
 
 | Repository | Provides | Reach for it when |
 |---|---|---|
@@ -70,16 +86,16 @@ consumer.
 ## Using a component
 
 ```bash
-git submodule add git@github.com:integra-lib/crc.git external/integra/crc
+git submodule add git@github.com:integra-lib/crc.git external/hwlib/crc
 ```
 
 ```cmake
-add_subdirectory(external/integra/crc)
-target_link_libraries(app PRIVATE Integra::crc)
+add_subdirectory(external/hwlib/crc)
+target_link_libraries(app PRIVATE Hwlib::crc)
 ```
 
 ```cpp
-#include <integra/crc.hpp>
+#include <hwlib/algorithms/crc.hpp>
 ```
 
 Each component carries its own include directory, so a header stays unreachable
@@ -95,9 +111,9 @@ with a message naming the version found.
 
 ## Where this is going
 
-GitHub is a staging ground. The target is the GitLab group
-`internal-projects/integra-lib`; the move changes only the URL in a consumer's
-`.gitmodules`.
+GitHub repositories remain under `integra-lib`. Their GitLab counterparts belong
+to subgroup `internal-projects/a000-hwlib`, organized by the section names above.
+Changing hosts changes only the URL in a consumer's `.gitmodules`.
 
 `docs/integra-lib.confluence.txt` in this repository is the same description in
 Confluence wiki markup, ready to paste.

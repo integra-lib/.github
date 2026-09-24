@@ -5,6 +5,10 @@ across firmware projects. The per-component repositories start from a clean slat
 by decision, so this file keeps the part of that history worth keeping: what the
 code came from, and what was deliberately changed on the way.
 
+The public API is grouped under `hwlib::<section>` and `include/hwlib/<section>/`:
+`utilities`, `algorithms`, `data_structures`, `communication`, `events`,
+`execution` and `persistence`. Repository names remain unchanged.
+
 ## The problem being solved
 
 * `utils.hpp` existed in **eight** projects — a138-ble-gateway, a000-firmware-update-over-modbus,
@@ -83,8 +87,8 @@ moves into the library:
 
 * **`CalcCrc` was a fourth copy of CRC-32/ISO-HDLC.** Same `0xEDB88320`, same
   initial and final XOR, a fifth of a page of hand-written loop inside
-  `settings-record.cpp`. It now calls `Integra::crc`. A test pins the result against
-  both the catalogue check value for `"123456789"` and the original's own loop,
+  `settings-record.cpp`. It now calls `hwlib::algorithms::Crc32IsoHdlc`. A test
+  pins the result against both the catalogue check value for `"123456789"` and the original's own loop,
   because the wrong checksum here would not fail a build — it would quietly reject
   every setting a device had already saved.
 * **A settings payload that is not trivially copyable is now a `static_assert`.**
@@ -196,6 +200,14 @@ for every filesystem; and `lfs_api.hpp`, a163's ring-of-files layer on top.
 * `button-event`'s one-context rule is a contract, not a compiler error. a174-hardware
   already honoured it; a new adapter that calls the core straight from an ISR would
   compile.
-* Nothing here has run on a device yet. The nine components are verified by their
-  own test suites on the host, under gcc and clang.
+* Nothing here has run on a device yet. The components are verified by their own
+  test suites on the host, under gcc and clang; periodic-clock has no test suite and
+  its header was syntax-checked with both compilers.
 
+## And one more: byte-codec
+
+`byte-codec` consolidates integer, enum and floating-point serialization from packet
+code in a169 and a130. It provides endian-aware `Store` and `Load` functions and a
+`ByteReader` that borrows its input and keeps a sticky failure state. Array reads are
+all-or-nothing. Shifts happen in an unsigned type matching the encoded width, avoiding
+the signed integer-promotion undefined behavior in the original code.
