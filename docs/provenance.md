@@ -256,7 +256,10 @@ over; the GATT reassembly buffer, the NVS storage and the manager stayed.
 
 The format did not change. The two codecs were run side by side on 200 000 randomly
 damaged messages: they never produced different filters, and every message only
-a138 accepted falls under one of the first two points below.
+a138 accepted falls under one of the first two points below. That holds for the
+compiler it ran on: a138 forms `p + 2` and `p + len` before comparing them with the
+end, which on a short message is a pointer past one-past-the-end and undefined
+behaviour, so its results elsewhere are not guaranteed.
 
 * **A filter without its flags record was decoded with flags 0** and reported as a
   success — an extended filter silently became a standard one. It is refused.
@@ -266,6 +269,10 @@ a138 accepted falls under one of the first two points below.
   `static_cast<uint8_t>(size)`. More than 255 are refused.
 * **A refused message had already overwritten part of the output.** It is left
   untouched.
+
+The input and output buffers must not overlap, in either direction; that is
+documented, not checked. An external review found it — the decoder reads the
+message again after writing — and no caller shares the storage.
 
 Known and unverified: no client of the format was found in the a138 repositories,
 so compatibility is checked against a138's firmware only, not against the app that
