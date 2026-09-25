@@ -245,3 +245,28 @@ Known and unverified: the window between the reclaim erase and the first commit 
 power lost there loses the state, as in a184; closing it needs a second sector and a
 new format. Not yet run through cppcheck's MISRA addon (Rule 15.5, multiple returns,
 will need suppressions in a184), not built with Keil, and not run on a device.
+
+## And can-filter-codec, from a138-ble-sensors
+
+`CanFilterCodec` sat in a138-ble-sensors' `shared-components/drivers/can`, between
+a GATT characteristic and the CAN driver: it packs the list of acceptance filters a
+phone or a PC sets into a versioned TLV message. It is the one part of that module
+whose Zephyr use was incidental — `struct can_filter` and `sys_get_le32` — so it came
+over; the GATT reassembly buffer, the NVS storage and the manager stayed.
+
+The format did not change. The two codecs were run side by side on 200 000 randomly
+damaged messages: they never produced different filters, and every message only
+a138 accepted falls under one of the first two points below.
+
+* **A filter without its flags record was decoded with flags 0** and reported as a
+  success — an extended filter silently became a standard one. It is refused.
+* **Ids and masks wider than 29 bits passed through** to the CAN driver. They are
+  refused on both sides.
+* **256 filters were encoded as a message announcing none:** the count was
+  `static_cast<uint8_t>(size)`. More than 255 are refused.
+* **A refused message had already overwritten part of the output.** It is left
+  untouched.
+
+Known and unverified: no client of the format was found in the a138 repositories,
+so compatibility is checked against a138's firmware only, not against the app that
+writes the filters.

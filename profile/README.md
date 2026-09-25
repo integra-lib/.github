@@ -79,6 +79,7 @@ Namespace and include prefix: `hwlib::communication`, `hwlib/communication/`.
 | Repository | Provides | Reach for it when |
 |---|---|---|
 | [transaction-engine](https://github.com/integra-lib/transaction-engine) | frame format, transport contract, sender and receiver | acknowledged command exchange over an unreliable link |
+| [can-filter-codec](https://github.com/integra-lib/can-filter-codec) | `EncodeCanFilters`, `DecodeCanFilters` | setting the acceptance filters of a CAN controller from a phone or a PC: the filter list as a few versioned TLV bytes |
 | [mqtt-topic](https://github.com/integra-lib/mqtt-topic) | `MatchTopic` | routing an MQTT message to the subscription whose filter it matches |
 | [zigbee-app](https://github.com/integra-lib/zigbee-app) | `ZigbeeApp`, `DecideZigbeeSignal` | a Zigbee device on ZBOSS (nRF Connect SDK): endpoints, join and leave, End Device sleep and polling; the signal policy is host-testable |
 
