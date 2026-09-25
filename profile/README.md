@@ -70,7 +70,7 @@ Namespace and include prefix: `hwlib::persistence`, `hwlib/persistence/`.
 |---|---|---|
 | [settings-record](https://github.com/integra-lib/settings-record) | `WriteSettingsRecord`, `ReadSettingsRecord` | settings in flash that read back only if they verify |
 | [littlefs-cpp](https://github.com/integra-lib/littlefs-cpp) | `Littlefs<Device>`, `Littlefs::File` | a filesystem on flash through littlefs, without allocating |
-| boot-slots | `hwlib_boot_prepare`, `hwlib_boot_journal_load`/`_save`, `hwlib_image_check` (C) | an A/B bootloader: which image to start, trial boot and rollback, a power-loss-safe state journal, image header and CRC check |
+| [boot-slots](https://github.com/integra-lib/boot-slots) | `hwlib_boot_prepare`, `hwlib_boot_journal_load`/`_save`, `hwlib_image_check` (C) | an A/B bootloader: which image to start, trial boot and rollback, a power-loss-safe state journal, image header and CRC check |
 
 ### Communication
 
@@ -80,6 +80,7 @@ Namespace and include prefix: `hwlib::communication`, `hwlib/communication/`.
 |---|---|---|
 | [transaction-engine](https://github.com/integra-lib/transaction-engine) | frame format, transport contract, sender and receiver | acknowledged command exchange over an unreliable link |
 | [mqtt-topic](https://github.com/integra-lib/mqtt-topic) | `MatchTopic` | routing an MQTT message to the subscription whose filter it matches |
+| [zigbee-app](https://github.com/integra-lib/zigbee-app) | `ZigbeeApp`, `DecideZigbeeSignal` | a Zigbee device on ZBOSS (nRF Connect SDK): endpoints, join and leave, End Device sleep and polling; the signal policy is host-testable |
 
 Shared tooling lives in [ci-shared](https://github.com/integra-lib/ci-shared) — the
 pipeline template and the style configs, used by the components and never by a
