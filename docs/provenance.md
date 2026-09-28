@@ -375,3 +375,29 @@ them; mutation-tested file by file, each regression test checked to fail on
 a139's behaviour. Known and unverified: not run on a device; frames are heap-allocated; Cortex-M0
 needs `__atomic_*` from libatomic.
 
+## And sht40, from a138-ble-sensors and a138-ble-gateway; and i2c-bus
+
+a138 had two SHT40 drivers: `shared-components/drivers/sht40` in
+a138-ble-sensors, behind its `II2cDevice` and `ILogger` interfaces, and
+`firmware/esp32/components/sht40` in a138-ble-gateway on ESP-IDF. Neither was
+taken whole; the driver was written against the SHT4x datasheet (version 6.5,
+April 2024) and each defect of the two is pinned by a test.
+
+* **gateway: a reading whose CRC failed came back as 0 °C and 0 %RH** — the zero
+  initialiser, returned as a measurement. It is an error now.
+* **gateway: a product's −3 °C offset in the driver; humidity uncropped** (the
+  clamp commented out, so −6 and 119 %RH came out); exceptions.
+* **sensors: `double` arithmetic**, software on a Cortex-M4F; **one failed reset in
+  the constructor disabled the driver for good**; 0.0 when not initialised, which
+  reads as a real 0 °C; negative temperatures logged as `-3.-45`.
+* Both waited inside the driver, the gateway 100 ms for a 1.6 ms measurement.
+
+The conversion is integer and 32-bit only — no software 64-bit division on a
+Cortex-M0 — checked against the formula for all 65536 raw values.
+
+The bus concept came out of stc3100 into **i2c-bus**, split per transfer
+(`I2cWrite`, `I2cRead`, `I2cWriteRead`): the SHT40 reads without a register
+address, which stc3100's write + write-read concept could not express, and two
+drivers each declaring the same concept would not compile together. stc3100 0.2.0
+takes it from there.
+
