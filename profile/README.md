@@ -42,6 +42,7 @@ Namespace and include prefix: `hwlib::algorithms`, `hwlib/algorithms/`.
 | [crc](https://github.com/integra-lib/crc) | `Crc8Nrsc5`, `Crc16Ccitt`, `Crc32IsoHdlc`, `Crc32Stream` | checksums: sensors, protocols, verifying a firmware image |
 | [debouncer](https://github.com/integra-lib/debouncer) | `Debouncer<INC, DEC>` | confirming a condition over several samples before acting on it |
 | [filters](https://github.com/integra-lib/filters) | `MedianFilter`, `HysteresisFilter`, `MovingAverage` | cleaning up a sensor reading: spikes, chatter at a threshold, noise |
+| [battery-monitor](https://github.com/integra-lib/battery-monitor) | `BatteryMonitor<Gauge>`, `CoulombGauge`, `SocFromOcv` | a battery's state of charge from a coulomb counter such as the STC3100, resuming across MCU resets |
 
 ### Execution
 

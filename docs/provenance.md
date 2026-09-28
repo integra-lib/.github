@@ -308,3 +308,33 @@ the STC3100 datasheet, Rev 1.
 Known and unverified: not run against a chip; the upper bits of the voltage
 register are not masked, as the datasheet does not give its width.
 
+## And battery-monitor, from a156, a159 and a160
+
+The three STC3100 projects each had a `BatteryMonitor` on top of the chip: OCV at
+start, coulomb counting, the offset in the chip's RAM with an inverted copy.
+a156-dl200p and a159-bpu-firmware share one lineage, a160-oto-screening wrote its
+own with a learned charging efficiency. The algorithm came over; the component
+drives any gauge through a concept, and hwlib's stc3100 satisfies it.
+
+* **The stored offset went stale after every correction.** All three zeroed the
+  chip's counter when clamping — a160 also on every change between charging and
+  discharging — without storing the new offset, so a reset of the MCU brought the
+  old offset back over a zeroed counter. a156's `SaveBatterySoc(m_soc)` compared
+  the value with itself and never saved. Corrections now move the offset only and
+  store it; the counter is reset only near overflow, stored first.
+* **An `int16_t` offset**, about 6.6 Ah at 33 mOhm, with a silent narrowing on
+  every fold. It is `int32_t` uAh.
+* **a160 let NaN through** its check on the float it read from RAM, and accepted a
+  stored state past full. The state is an integer, checked to empty..full.
+* **a156 waited for 3.4 V in a loop**, which a flat battery never gives;
+  `Start()` reports eNotReady instead.
+* a160 threw at low battery, timed itself with `system_clock` and shared `static`
+  debouncers between instances; an OCV table with a repeated voltage divided by
+  zero in all three.
+* Left behind: a160's learned efficiency, a156's ×1.15 and 99 % while charging,
+  a160's 10 %-is-empty, the charger-pin logic — product decisions.
+
+Mutation testing: 47 of 49 mutants caught; the two left are equivalent, the
+interpolation being continuous at a table point. One caught only under UBSan —
+reading past the table at its last voltage. Not run on a device.
+
