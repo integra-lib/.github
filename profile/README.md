@@ -83,6 +83,16 @@ Namespace and include prefix: `hwlib::communication`, `hwlib/communication/`.
 | [mqtt-topic](https://github.com/integra-lib/mqtt-topic) | `MatchTopic` | routing an MQTT message to the subscription whose filter it matches |
 | [zigbee-app](https://github.com/integra-lib/zigbee-app) | `ZigbeeApp`, `DecideZigbeeSignal` | a Zigbee device on ZBOSS (nRF Connect SDK): endpoints, join and leave, End Device sleep and polling; the signal policy is host-testable |
 
+### Drivers
+
+Namespace and include prefix: `hwlib::drivers`, `hwlib/drivers/`. A driver takes
+the bus as a template parameter — any type with the members the driver's concept
+names — so it carries no platform code; the application adapts its own HAL.
+
+| Repository | Provides | Reach for it when |
+|---|---|---|
+| [stc3100](https://github.com/integra-lib/stc3100) | `Stc3100<Bus>`, `I2cBus` | an ST STC3100 battery monitor: coulomb counter, battery voltage, temperature, RAM kept across MCU resets |
+
 Shared tooling lives in [ci-shared](https://github.com/integra-lib/ci-shared) — the
 pipeline template and the style configs, used by the components and never by a
 consumer.

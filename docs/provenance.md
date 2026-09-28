@@ -277,3 +277,34 @@ message again after writing — and no caller shares the storage.
 Known and unverified: no client of the format was found in the a138 repositories,
 so compatibility is checked against a138's firmware only, not against the app that
 writes the filters.
+
+## And stc3100, from a160-oto-screening
+
+Three projects talk to ST's STC3100 coulomb counter. a160-oto-screening has a C
+driver of its own (`firmware/lib/board/src/mcu/stc3100.c`); a156-dl200p and
+a159-bpu-firmware share another lineage (`gas_gauge.c` under a `BatteryMonitor`).
+a160's was taken — it checked every transfer and converted to units — and the
+fixes cover what the other two got wrong as well. Everything was checked against
+the STC3100 datasheet, Rev 1.
+
+* **Resetting the charge drove the IO0 pin low** in all three. They wrote 0x02 to
+  REG_CTRL for GG_RST, which also writes IO0DATA = 0, "IO0 output is driven low".
+  The driver writes IO0DATA = 1.
+* **Unbounded waits.** a160's init looped until the voltage read 500 mV, which is
+  refreshed only every 4 s, and forever without a battery; a156 spun on VTM_EOC and
+  on retrying a CTRL write, a159 on the latter. The driver never waits.
+* **Failed reads became values:** a160 returned the converted zero from its buffer
+  along with the error code, a156 an uninitialised charge that went into the state
+  of charge. Reads are `std::optional`.
+* **Precision:** a160 returned current in whole milliamps and temperature in whole
+  degrees; one current LSB across 33 mOhm is 357 uA and read as 0. The driver
+  returns uA and m°C.
+* a160 hard-coded the sense resistor; a156 read registers by casting bytes to
+  `uint16_t`, little-endian only; a156 inverted the result of every register write.
+* Left behind: a160's linear 3100–3700 mV battery level (the product's cell) and
+  the three `BatteryMonitor`s, the state-of-charge algorithm, which is a component
+  of its own.
+
+Known and unverified: not run against a chip; the upper bits of the voltage
+register are not masked, as the datasheet does not give its width.
+
