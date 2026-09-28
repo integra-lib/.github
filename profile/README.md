@@ -53,6 +53,7 @@ Namespace and include prefix: `hwlib::execution`, `hwlib/execution/`.
 | [work-queue](https://github.com/integra-lib/work-queue) | `IWorkQueue` | an interface for deferred execution |
 | [periodic-clock](https://github.com/integra-lib/periodic-clock) | `IPeriodicClock` | an interface for a monotonic clock and a periodic tick |
 | [worker](https://github.com/integra-lib/worker) | `Worker<Mutex>` | posting work from any context and running it all on one |
+| [coro](https://github.com/integra-lib/coro) | `Task`, `SyncWait`, `WhenAllReady`, `AsyncScope`, `AsyncGenerator`, `IoService` | C++20 coroutines on a microcontroller: tasks, waiting for several at once, generators, a scheduler with timers on its own thread |
 
 ### Events
 

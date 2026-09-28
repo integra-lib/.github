@@ -338,3 +338,40 @@ Mutation testing: 47 of 49 mutants caught; the two left are equivalent, the
 interpolation being continuous at a table point. One caught only under UBSan —
 reading past the table at its last voltage. Not run on a device.
 
+## And coro, from a139-bms48v-firmware
+
+a139's `lib/coro` is a C++23 coroutine library in the manner of cppcoro — task,
+sync_wait, when_all_ready, async_scope, async_generator, an io_service scheduler and
+two queues — used by its nRF52840 BMS firmware with exceptions and RTTI on. It came
+over whole, renamed to hwlib's style, C++20, with or without exceptions. Every
+defect below was reproduced by building a139's own headers and running the case.
+
+* **The scheduler lost coroutines.** Past its 32-slot queue it put the overflow back
+  on its intrusive list by the tail instead of the head: of 100 coroutines scheduled
+  at once, 33 ran. The scheduler is now an intrusive lock-free stack that the one
+  running thread turns into a FIFO — no capacity, nothing to overflow.
+* **`join()` did not wait for a single remaining work** and then resumed the joiner a
+  second time: the count started at 0 where cppcoro's starts at 1, but `join()` kept
+  cppcoro's `> 1`.
+* **`task.hpp` did not link from two translation units**: a non-template member was
+  defined in the header without `inline`.
+* **Move assignment leaked a coroutine frame** in `when_all_task` and
+  `async_generator`; **the queues never destroyed what was left in them.**
+* `sync_wait()` on a task returning `T&` did not compile; the scheduler used
+  `high_resolution_clock` (the system clock in libstdc++) and could release its
+  `counting_semaphore<1024>` past the maximum.
+
+An external review then found, and the component fixes: `Run()` could spin on
+self-rescheduling work without reaching its timers or its stop request (it now
+works in rounds); `AsyncScope` could be destroyed with work running or spawned into
+after `Join()` (both end the program); `Resume()` and `Result()` on a finished or
+empty task were unchecked. The clock must now be steady at compile time.
+
+Found while testing: clang at `-O1` reuses `std::this_thread::get_id()` across a
+`co_await` although the coroutine moved threads there — noted in the README.
+
+Tests: 73, under gcc, clang, ASan+UBSan and TSan, with the README's examples among
+them; mutation-tested file by file, each regression test checked to fail on
+a139's behaviour. Known and unverified: not run on a device; frames are heap-allocated; Cortex-M0
+needs `__atomic_*` from libatomic.
+
