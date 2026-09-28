@@ -96,6 +96,8 @@ names — so it carries no platform code; the application adapts its own HAL.
 | [i2c-bus](https://github.com/integra-lib/i2c-bus) | `I2cWrite`, `I2cRead`, `I2cWriteRead`, `I2cBus`, `FakeI2cBus` | always, next to an I2C driver: the bus concepts it takes, and a fake bus to test it with |
 | [stc3100](https://github.com/integra-lib/stc3100) | `Stc3100<Bus>` | an ST STC3100 battery monitor: coulomb counter, battery voltage, temperature, RAM kept across MCU resets |
 | [sht40](https://github.com/integra-lib/sht40) | `Sht40<Bus>` | a Sensirion SHT40 humidity and temperature sensor, read without waiting inside the driver |
+| [spi-bus](https://github.com/integra-lib/spi-bus) | `SpiDevice`, `FakeSpiDevice` | always, next to an SPI driver: the device concept it takes, and a fake device to test it with |
+| [mfrc522](https://github.com/integra-lib/mfrc522) | `Mfrc522<Spi>`, `Iso14443aActivation` | an NXP MFRC522 NFC reader: the UID of an ISO/IEC 14443 A card — MIFARE, NTAG — without waiting inside the driver |
 
 Shared tooling lives in [ci-shared](https://github.com/integra-lib/ci-shared) — the
 pipeline template and the style configs, used by the components and never by a

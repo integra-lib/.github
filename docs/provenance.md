@@ -401,3 +401,33 @@ address, which stc3100's write + write-read concept could not express, and two
 drivers each declaring the same concept would not compile together. stc3100 0.2.0
 takes it from there.
 
+## And mfrc522, from a174-hardware; and spi-bus
+
+a174's `firmware/common/drivers/nfc-reader-mfrc522` had three layers: registers
+over Zephyr SPI, ISO/IEC 14443-3 activation, and a reader on a Zephyr work queue
+with a callback. The first two were rewritten against the MFRC522 datasheet
+(Rev. 3.9, April 2016) and ISO/IEC 14443-3 as `Mfrc522<Spi>` and a protocol-only
+`Iso14443aActivation`; the third was not taken — polling is the caller's.
+
+* **The SAK was taken without its CRC_A**, which neither the chip (RxCRCEn off
+  after reset) nor the driver checked: one flipped cascade bit changed the UID's
+  length.
+* **A collision was not an error**: CollErr was missing from the error mask, so two
+  cards read as a clean answer and failed later, if at all, on the BCC.
+* **Any answer to HLTA counted as halted**; ISO 14443-3 makes an answer a refusal.
+* **The cascade tag rather than the SAK decided the UID's length.**
+* It busy-waited inside the driver — up to 5000 × (SPI transfer + 20 µs) per
+  exchange — and ran every SELECT's CRC through the chip's coprocessor. The CRC_A
+  is software now; an exchange starts in six transfers and a pending poll is one.
+* The reader layer replaced its `std::function` callback while the work-queue
+  thread could be calling it.
+
+The tests drive a simulated MFRC522 with simulated cards; mutation testing
+killed every mutant but one equivalent. An external review found that a pending
+exchange is not bounded by the chip once an answer begins — the contract now asks
+the caller for a deadline — and that a valid card with an 88h byte in its final
+UID part was rejected; fixed. Not run against a chip.
+
+**spi-bus** holds `SpiDevice`, one full-duplex `Transfer(tx, rx)` with the chip
+selected, `rx` empty or as long as `tx`, and `FakeSpiDevice` — made a component of
+its own at the first SPI driver, as i2c-bus was at the second I2C one.
