@@ -43,6 +43,7 @@ Namespace and include prefix: `hwlib::algorithms`, `hwlib/algorithms/`.
 | [debouncer](https://github.com/integra-lib/debouncer) | `Debouncer<INC, DEC>` | confirming a condition over several samples before acting on it |
 | [filters](https://github.com/integra-lib/filters) | `MedianFilter`, `HysteresisFilter`, `MovingAverage` | cleaning up a sensor reading: spikes, chatter at a threshold, noise |
 | [battery-monitor](https://github.com/integra-lib/battery-monitor) | `BatteryMonitor<Gauge>`, `CoulombGauge`, `SocFromOcv` | a battery's state of charge from a coulomb counter such as the STC3100, resuming across MCU resets |
+| [bresenham-modulator](https://github.com/integra-lib/bresenham-modulator) | `BresenhamModulator` | power through a solid-state relay in whole mains half-cycles, spread evenly: the level set from a task, stepped from an interrupt |
 
 ### Execution
 

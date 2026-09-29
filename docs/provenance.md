@@ -470,3 +470,21 @@ actuator under test, and mutation-tested until no mutant survived.
 
 `motor-actuator-ctrl` and `motor-ctrl`, the roaster's own door sequences and geared
 motor, were not taken. None of the three has run on a board yet.
+
+## And bresenham-modulator, from a146-control-board
+
+a146's `heat-ctrl/bresenham.hpp` switches the roaster's heater through a
+solid-state relay, one step per mains half-cycle. Taken as the algorithm alone;
+the start/stop/fail state and the zero-crossing timer stay with the board.
+
+* **Setting the value restarted the pattern**: `SetValue()` reset the error and
+  the step count, so the duty depended on how often it was called — modelled on
+  a146's code, set every 10 half-cycles, a period of 100 came out in whole tens:
+  1 % and 5 % gave 0 %, 25 % gave 20 %, 37 % gave 40 %.
+* **A race**: the task wrote three fields that the timer interrupt read and wrote.
+  The level is now the only shared state, a 16-bit atomic — plain loads and stores
+  even on a Cortex-M0, checked in the generated code.
+* `GetSize()` truncated a 16-bit size to 8 bits.
+
+Tested exhaustively for exactly `level` ons in every window of a period, gaps
+within one step and a count within half a step of the ideal; mutation-tested.
