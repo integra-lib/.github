@@ -105,6 +105,7 @@ names — so it carries no platform code; the application adapts its own HAL.
 | [linear-actuator](https://github.com/integra-lib/linear-actuator) | `LinearActuator<Bridge>`, `HBridge` | a DC-motor linear actuator with position and current feedback: finds its ends, moves to positions, stops on overload or stall |
 | [fan5646](https://github.com/integra-lib/fan5646) | `Fan5646<Spi>` | an onsemi FAN5646 soft LED blinker, programmed over TinyWire generated on an SPI data line |
 | [mcp4922](https://github.com/integra-lib/mcp4922) | `Mcp4922<Spi>` | a Microchip MCP4922 dual 12-bit DAC: codes 0 to 4095, gain and reference buffer per write, both outputs updated together through LDAC |
+| [ads129x](https://github.com/integra-lib/ads129x) | `Ads129x<Spi, N>` | a TI ADS1294, ADS1296 or ADS1298 (R) ECG/EEG front end: 4 to 8 channels of 24 bits, one chip or a daisy chain read in one transfer, lead-off status per electrode |
 
 Shared tooling lives in [ci-shared](https://github.com/integra-lib/ci-shared) — the
 pipeline template and the style configs, used by the components and never by a

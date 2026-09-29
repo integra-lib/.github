@@ -552,3 +552,30 @@ against the ADXL345 datasheet, Rev. G, and UM10204, 3.1.16.
 External reviews of both found a second `Configure()` rerouting a pending
 interrupt, a read-back that cleared INT_SOURCE, SDA moving right after SCL fell,
 and a first STOP without its setup time; all fixed. Neither has run on hardware.
+
+## And ads129x, from a159-bpu-firmware
+
+a159's `sensor_manager/ads1298` read two ADS1298 in a daisy chain on one chip
+select. Its register values and its bit recombination were taken as the
+reference; its transport timing and error handling were not. Checked against
+SBAS459K (Rev. K).
+
+* **Configuration could fail without a word**: `StartConfig()` ignored every
+  write and read nothing back. `Configure()` reports a failed transfer and
+  compares the registers.
+* **The status word was never checked**, so a second chip missing from the chain,
+  or a frame out of step, read as samples. Each device's 1100b header is checked.
+* **The START pin was raised along with the START command**, which the datasheet
+  asks to keep low; the driver never touches the pin.
+* `SendStartCmd()` reported only its second transfer.
+* The extra SCLK of the chain was bit-banged with the SPI peripheral off mid-frame,
+  and the clock changed by writing SPI2BRG in the driver. The frame is now one
+  transfer, realigned across the don't-care bit, and slow commands and fast
+  frames take two `SpiDevice`s.
+* CS rose 1 µs after the last bit of a register write, where the datasheet asks
+  4 tCLK, about 1.95 µs: not guaranteed there, the adapter's now.
+
+The driver covers the family, 4 to 8 channels, one chip or a chain. An external
+review found `Reset()` without SDATAC in RDATAC mode, absent channels' registers
+of an ADS1294 or ADS1296 written and read, and the DRDY and shared-clock
+preconditions missing; all fixed. It has not run on hardware.
