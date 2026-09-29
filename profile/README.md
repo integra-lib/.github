@@ -103,6 +103,7 @@ names — so it carries no platform code; the application adapts its own HAL.
 | [max31856](https://github.com/integra-lib/max31856) | `Max31856<Spi>` | a MAX31856 thermocouple converter: types B to T in m°C, with the cold junction and the faults of every reading |
 | [linear-actuator](https://github.com/integra-lib/linear-actuator) | `LinearActuator<Bridge>`, `HBridge` | a DC-motor linear actuator with position and current feedback: finds its ends, moves to positions, stops on overload or stall |
 | [fan5646](https://github.com/integra-lib/fan5646) | `Fan5646<Spi>` | an onsemi FAN5646 soft LED blinker, programmed over TinyWire generated on an SPI data line |
+| [mcp4922](https://github.com/integra-lib/mcp4922) | `Mcp4922<Spi>` | a Microchip MCP4922 dual 12-bit DAC: codes 0 to 4095, gain and reference buffer per write, both outputs updated together through LDAC |
 
 Shared tooling lives in [ci-shared](https://github.com/integra-lib/ci-shared) — the
 pipeline template and the style configs, used by the components and never by a

@@ -508,3 +508,20 @@ chip. An external review questioned the leading low byte of each word — it has
 no rising edge, so the first edge is A0's — and asked for the adapter's duties
 (MSB first, no gaps, MOSI idle low) and the conservative 40 µs bound between
 words to be stated and tested; both done. The part is end of life.
+
+## And mcp4922, from a168-waveform-generator
+
+a168's `lib/mcp4922` drove the dual DAC of a waveform generator over nRF SPIM3.
+Its command format matched Register 5-1 of the datasheet (DS22250A) and is kept.
+
+* **A board's limit lived in the driver**: every code was clipped to 3430 —
+  `MAX_ALLOWED_DAC_500UA_VAL`, that board's 500 µA output limit — silently, while
+  the application scaled to 4095. Codes are 0 to 4095 now; one over is refused.
+* **A failed transfer only asserted**; a release build lost the write. Every write
+  returns whether it happened.
+* Pins, SPIM3 and the `latch` alias were fixed in the driver.
+
+Noticed and not taken: the application shares LDAC between the two channels, so
+latching channel A also latches channel B's pending value early. A static review
+added two notes — do not pulse LDAC after a failed `WriteBoth()`, and a software
+power-down is assumed, not stated, to wait for LDAC — and the simulator's limits.
