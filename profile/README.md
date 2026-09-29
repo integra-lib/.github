@@ -98,6 +98,9 @@ names — so it carries no platform code; the application adapts its own HAL.
 | [sht40](https://github.com/integra-lib/sht40) | `Sht40<Bus>` | a Sensirion SHT40 humidity and temperature sensor, read without waiting inside the driver |
 | [spi-bus](https://github.com/integra-lib/spi-bus) | `SpiDevice`, `FakeSpiDevice` | always, next to an SPI driver: the device concept it takes, and a fake device to test it with |
 | [mfrc522](https://github.com/integra-lib/mfrc522) | `Mfrc522<Spi>`, `Iso14443aActivation` | an NXP MFRC522 NFC reader: the UID of an ISO/IEC 14443 A card — MIFARE, NTAG — without waiting inside the driver |
+| [ad7797](https://github.com/integra-lib/ad7797) | `Ad7797<Spi>` | an Analog Devices AD7797 24-bit bridge converter: a load cell or strain gauge in µV, overrange as an error |
+| [max31856](https://github.com/integra-lib/max31856) | `Max31856<Spi>` | a MAX31856 thermocouple converter: types B to T in m°C, with the cold junction and the faults of every reading |
+| [linear-actuator](https://github.com/integra-lib/linear-actuator) | `LinearActuator<Bridge>`, `HBridge` | a DC-motor linear actuator with position and current feedback: finds its ends, moves to positions, stops on overload or stall |
 
 Shared tooling lives in [ci-shared](https://github.com/integra-lib/ci-shared) — the
 pipeline template and the style configs, used by the components and never by a

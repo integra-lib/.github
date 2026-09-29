@@ -431,3 +431,42 @@ UID part was rejected; fixed. Not run against a chip.
 **spi-bus** holds `SpiDevice`, one full-duplex `Transfer(tx, rx)` with the chip
 selected, `rx` empty or as long as `tx`, and `FakeSpiDevice` — made a component of
 its own at the first SPI driver, as i2c-bus was at the second I2C one.
+
+## And ad7797, max31856 and linear-actuator, from a146-control-board
+
+a146 is a coffee roaster's control board (GD32F470, FreeRTOS, Modbus RTU). Its
+drivers live on the GitLab branch `develop`; the copy on the archive drive
+predates them. Three were taken, each rewritten against its datasheet — the
+AD7796/AD7797 Rev. B, the MAX31856 Rev 0 — with a simulated chip or a modelled
+actuator under test, and mutation-tested until no mutant survived.
+
+**ad7797**, the load-cell converter (`sensor-manager/ad7797`, `tenso`):
+
+* the voltage sign-extended an offset-binary code, so a positive full scale read
+  as −VREF/128; its `static_assert`s lacked an absolute value and passed anyway;
+* the Modbus weight register carried the raw code × 10 as `uint16_t` — overflow,
+  and an out-of-range float-to-integer conversion, undefined;
+* ERR was ignored, so a clamped overrange went out as a weight;
+* `SelectBurnout()` cleared U/B instead of BO; AD7793 bits in the header;
+* endless waits on DOUT/RDY and on the ID; function-static state shared by every
+  instance.
+
+**max31856**, the thermocouple converter (`sensor-manager/max31856`, `tc-ctrl`):
+
+* faults were probed once, at start: a thermocouple that opened later kept
+  reporting whatever the chip read, and one connected later was never read;
+* the type-K thermocouple-voltage conversion fed to Modbus was about 1.1 mV
+  (some 27 °C) off — the NIST exponential term added ten times and not squared;
+  not taken, since the chip linearizes;
+* a missing chip only asserted; `ClearFault()` had no effect in comparator mode.
+
+**linear-actuator** (`actuator-ctrl`), four roaster dampers:
+
+* the position table was `reserve()`d and indexed at size 0 — undefined;
+* positions and codes did not invert each other (`/ (N − 1)` against `/ N`);
+* the calibration had no timeout, its declared `TIMEOUT_MS` unused;
+* the sensor's direction was assumed; a FreeRTOS timer and the task both drove
+  the motor; four actuators shared one overwriting notification slot.
+
+`motor-actuator-ctrl` and `motor-ctrl`, the roaster's own door sequences and geared
+motor, were not taken. None of the three has run on a board yet.
