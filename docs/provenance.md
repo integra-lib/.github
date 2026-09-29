@@ -488,3 +488,23 @@ the start/stop/fail state and the zero-crossing timer stay with the board.
 
 Tested exhaustively for exactly `level` ons in every window of a period, gaps
 within one step and a count within half a step of the ideal; mutation-tested.
+
+## And fan5646, from a156-dl200p
+
+a156's `indication/tiny_wire` programmed a FAN5646 LED blinker over TinyWire
+generated on nRF SPIM's MOSI, one byte per bit. The encoding was right and is
+kept; read against the FAN5646 datasheet, Rev. 1.0.3:
+
+* `SendExec()` executed nothing: it held CTRL low for 200 µs, which sends the chip
+  to IDLE; the chip executes on CTRL held *high*, which the application did later
+  as a GPIO. That hand-over is now the documented, timing-critical contract.
+* Each word was followed by 200 µs of low CTRL (`k_sleep` in the driver), IDLE
+  between every register, and `BlinkSet()` was called twice "to ensure" it was
+  received. All five words now go out in one continuous transfer.
+* A static class on a fixed SPIM instance with a static buffer.
+
+The tests decode the SPI stream by Figure 14 and Tables 12 and 13 in a simulated
+chip. An external review questioned the leading low byte of each word — it has
+no rising edge, so the first edge is A0's — and asked for the adapter's duties
+(MSB first, no gaps, MOSI idle low) and the conservative 40 µs bound between
+words to be stated and tested; both done. The part is end of life.
