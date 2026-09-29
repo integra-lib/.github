@@ -525,3 +525,30 @@ Noticed and not taken: the application shares LDAC between the two channels, so
 latching channel A also latches channel B's pending value early. A static review
 added two notes — do not pulse LDAC after a failed `WriteBoth()`, and a software
 power-down is assumed, not stated, to wait for LDAC — and the simulator's limits.
+
+## And adxl345, and a bus clear for i2c-bus, from a159-bpu-firmware
+
+a159's `sensor_manager/adxl345` read the accelerometer over PIC32 I2C2, and its
+`i2cCtrl::SwBusReset()` cleared a stuck bus. The register choices of the first — a
+six-byte burst for a sample, the measure bit written last — were right. Checked
+against the ADXL345 datasheet, Rev. G, and UM10204, 3.1.16.
+
+* **Configuration could fail without a word.** `StartConfig()` ignored every
+  write's result. `Configure()` reports a failed transfer and reads the
+  registers back.
+* **A timed-out read kept the old sample**, as if new. A failed read is an empty
+  `std::optional`.
+* **The timeouts broke at the counter wrap**: `_CP0_GET_COUNT() > start + 1800000`
+  was true at once when the sum overflowed. The driver has no loops.
+* **A chip left measuring was reconfigured so**; the datasheet recommends standby.
+  `Configure()` enters it first, and turns the interrupt outputs off until they
+  are routed.
+* **The bus clear reported success when SDA never let go** — `i` ends at 17
+  against a `TIMEOUT` of 16 — and **sent no STOP**: its pin helpers are named the
+  other way round, so its closing "STOP" ran with SCL held low. `RecoverI2cBus()`
+  in i2c-bus 0.1.1 sends up to nine clocks, each ending in an attempt at a STOP,
+  as Linux does, and reports whether SDA or SCL stays held.
+
+External reviews of both found a second `Configure()` rerouting a pending
+interrupt, a read-back that cleared INT_SOURCE, SDA moving right after SCL fell,
+and a first STOP without its setup time; all fixed. Neither has run on hardware.

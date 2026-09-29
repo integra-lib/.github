@@ -94,9 +94,10 @@ names — so it carries no platform code; the application adapts its own HAL.
 
 | Repository | Provides | Reach for it when |
 |---|---|---|
-| [i2c-bus](https://github.com/integra-lib/i2c-bus) | `I2cWrite`, `I2cRead`, `I2cWriteRead`, `I2cBus`, `FakeI2cBus` | always, next to an I2C driver: the bus concepts it takes, and a fake bus to test it with |
+| [i2c-bus](https://github.com/integra-lib/i2c-bus) | `I2cWrite`, `I2cRead`, `I2cWriteRead`, `I2cBus`, `FakeI2cBus`, `RecoverI2cBus` | always, next to an I2C driver: the bus concepts it takes, a fake bus to test it with, and the bus clear for a device stuck holding SDA |
 | [stc3100](https://github.com/integra-lib/stc3100) | `Stc3100<Bus>` | an ST STC3100 battery monitor: coulomb counter, battery voltage, temperature, RAM kept across MCU resets |
 | [sht40](https://github.com/integra-lib/sht40) | `Sht40<Bus>` | a Sensirion SHT40 humidity and temperature sensor, read without waiting inside the driver |
+| [adxl345](https://github.com/integra-lib/adxl345) | `Adxl345<Bus>` | an Analog Devices ADXL345 three-axis accelerometer over I2C: ±2 to ±16 g, counts and mg, configured in standby and read back |
 | [spi-bus](https://github.com/integra-lib/spi-bus) | `SpiDevice`, `FakeSpiDevice` | always, next to an SPI driver: the device concept it takes, and a fake device to test it with |
 | [mfrc522](https://github.com/integra-lib/mfrc522) | `Mfrc522<Spi>`, `Iso14443aActivation` | an NXP MFRC522 NFC reader: the UID of an ISO/IEC 14443 A card — MIFARE, NTAG — without waiting inside the driver |
 | [ad7797](https://github.com/integra-lib/ad7797) | `Ad7797<Spi>` | an Analog Devices AD7797 24-bit bridge converter: a load cell or strain gauge in µV, overrange as an error |
