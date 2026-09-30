@@ -98,7 +98,7 @@ names — so it carries no platform code; the application adapts its own HAL.
 | [stc3100](https://github.com/integra-lib/stc3100) | `Stc3100<Bus>` | an ST STC3100 battery monitor: coulomb counter, battery voltage, temperature, RAM kept across MCU resets |
 | [sht40](https://github.com/integra-lib/sht40) | `Sht40<Bus>` | a Sensirion SHT40 humidity and temperature sensor, read without waiting inside the driver |
 | [adxl345](https://github.com/integra-lib/adxl345) | `Adxl345<Bus>` | an Analog Devices ADXL345 three-axis accelerometer over I2C: ±2 to ±16 g, counts and mg, configured in standby and read back |
-| [spi-bus](https://github.com/integra-lib/spi-bus) | `SpiDevice`, `FakeSpiDevice` | always, next to an SPI driver: the device concept it takes, and a fake device to test it with |
+| [spi-bus](https://github.com/integra-lib/spi-bus) | `SpiDevice`, `SpiBus`, `FakeSpiDevice`, `FakeSpiBus` | always, next to an SPI driver: the device concept it takes — or the bus, where the driver holds chip select itself — and fakes to test it with |
 | [mfrc522](https://github.com/integra-lib/mfrc522) | `Mfrc522<Spi>`, `Iso14443aActivation` | an NXP MFRC522 NFC reader: the UID of an ISO/IEC 14443 A card — MIFARE, NTAG — without waiting inside the driver |
 | [ad7797](https://github.com/integra-lib/ad7797) | `Ad7797<Spi>` | an Analog Devices AD7797 24-bit bridge converter: a load cell or strain gauge in µV, overrange as an error |
 | [max31856](https://github.com/integra-lib/max31856) | `Max31856<Spi>` | a MAX31856 thermocouple converter: types B to T in m°C, with the cold junction and the faults of every reading |
@@ -106,6 +106,7 @@ names — so it carries no platform code; the application adapts its own HAL.
 | [fan5646](https://github.com/integra-lib/fan5646) | `Fan5646<Spi>` | an onsemi FAN5646 soft LED blinker, programmed over TinyWire generated on an SPI data line |
 | [mcp4922](https://github.com/integra-lib/mcp4922) | `Mcp4922<Spi>` | a Microchip MCP4922 dual 12-bit DAC: codes 0 to 4095, gain and reference buffer per write, both outputs updated together through LDAC |
 | [ads129x](https://github.com/integra-lib/ads129x) | `Ads129x<Spi, N>` | a TI ADS1294, ADS1296 or ADS1298 (R) ECG/EEG front end: 4 to 8 channels of 24 bits, one chip or a daisy chain read in one transfer, lead-off status per electrode |
+| [sd-spi](https://github.com/integra-lib/sd-spi) | `SdSpi<Bus>` | an SD memory card in SPI mode — SDSC, SDHC, SDXC, MMC — read, written and erased by 512-byte sector, CRC on, without waiting inside the driver |
 
 Shared tooling lives in [ci-shared](https://github.com/integra-lib/ci-shared) — the
 pipeline template and the style configs, used by the components and never by a

@@ -579,3 +579,34 @@ The driver covers the family, 4 to 8 channels, one chip or a chain. An external
 review found `Reset()` without SDATAC in RDATAC mode, absent channels' registers
 of an ADS1294 or ADS1296 written and read, and the DRDY and shared-clock
 preconditions missing; all fixed. It has not run on hardware.
+
+## And sd-spi, from a159-bpu-firmware; and SpiBus in spi-bus 0.1.1
+
+a159's `sd_card_fifo/sd_card` was a ChaN `mmc.c` derivative for PIC32, SPI1
+through registers and every wait a FreeRTOS tick. Its command flow was taken as
+the reference; the code is new, from the SD Physical Layer Simplified
+Specification, version 9.10, §7 and §5.
+
+* **The capacity was computed in 32 bits**: a card of 4 GiB or more got a size
+  that wrapped, one of exactly 4, 8 or 16 GiB a size of 0. It is 64 bits here.
+* **C_SIZE of a CSD v2 dropped `csd[7]`**: an SDXC over 32 GiB came out too small.
+* **The erase sent sector numbers where SDSC wants byte addresses**, with a hard
+  1 s timeout for the whole card.
+* **The block CRC was discarded and every command CRC was `01h`.** CRC is on:
+  CRC7 on every command, CRC16 on every block, both ways.
+* **Its 32-bit SPI mode reinterpreted the buffer as `uint32_t`**, undefined on a
+  misaligned buffer.
+* **Any error dropped `ready`**, silently, until a re-initialisation.
+
+An SD card is selected across a command and its data, so it cannot use
+`SpiDevice`, where the adapter owns chip select: spi-bus 0.1.1 adds `SpiBus`, a
+bus whose chip select the driver drives, and `FakeSpiBus`.
+
+The driver was written by another agent from a brief, and reviewed here in three
+rounds. They found the data token after R1 swallowed by a fixed response window —
+the CSD, which arrives within NCR, would not have read on a real card, and the
+simulator's access delay had been set to hide it; a busy card, after an abandoned
+operation, taken for an R1 of 00h; the 8 clocks after a transaction missing; MMC
+claimed but its CSD not read; and the SpiBus contract forbidding the clocks with
+CS high that SD needs. All fixed. MMC is read with the SD CSD v1 layout, an
+assumption without an MMC specification at hand. It has not run against a card.
